@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Issue Book</title>
+</head>
+<body>
+    <h2>📖 Issue Book</h2>
+    <form method="POST">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <label>Student ID:</label><br>
+        <input type="number" name="student_id" required><br><br>
+
+        <label>Book ID:</label><br>
+        <input type="text" name="book_id" required><br><br>
+
+        <button type="submit">Issue Book</button>
+    </form>
+</body>
+</html>

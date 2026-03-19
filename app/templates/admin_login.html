@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Admin Login | ShelfMate</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #1e3c72, #2a5298);
+            animation: fadeIn 1s ease-in;
+            color: white;
+        }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes slideUp { from { transform: translateY(50px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+        .card-glass {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(8px);
+            border-radius: 20px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+            animation: slideUp 1s ease-out;
+        }
+        .btn-animated {
+            font-size: 1.1rem; font-weight: bold;
+            border-radius: 10px; padding: 10px 20px;
+            transition: transform 0.3s;
+        }
+        .btn-animated:hover { transform: scale(1.05); }
+    </style>
+</head>
+<body>
+    <div class="container d-flex justify-content-center align-items-center vh-100">
+        <div class="col-md-5 card-glass p-4">
+            <h2 class="text-center mb-4">🔑 Admin Login</h2>
+
+            <!-- Flash messages -->
+            {% with messages = get_flashed_messages(with_categories=true) %}
+              {% if messages %}
+                {% for category, message in messages %}
+                  <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                  </div>
+                {% endfor %}
+              {% endif %}
+            {% endwith %}
+
+            <!-- Form -->
+            <form method="POST" action="{{ url_for('auth.admin_login') }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="mb-3">
+                    <label for="email" class="form-label">Admin Email</label>
+                    <input type="email" class="form-control" id="email" name="email" placeholder="admin@shelfmate.com" required>
+                </div>
+                <div class="mb-3">
+                    <label for="password" class="form-label">Password</label>
+                    <input type="password" class="form-control" id="password" name="password" placeholder="Enter password" required>
+                </div>
+                <button type="submit" class="btn btn-dark w-100 btn-animated">Login</button>
+            </form>
+        </div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

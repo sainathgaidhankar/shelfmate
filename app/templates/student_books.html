@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html>
+<head><title>Student Books</title></head>
+<body>
+    <h2>Books borrowed by {{ student.name }}</h2>
+    <table border="1">
+        <tr><th>Txn ID</th><th>Book</th><th>Status</th><th>Issue Date</th><th>Due Date</th><th>Returned At</th></tr>
+        {% for txn in txns %}
+        <tr>
+            <td>{{ txn.txn_id }}</td>
+            <td>{{ txn.book.title }}</td>
+            <td>{{ txn.status }}</td>
+            <td>{{ txn.issue_date }}</td>
+            <td>{{ txn.due_date }}</td>
+            <td>{{ txn.returned_at or 'Not Returned' }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+</body>
+</html>
