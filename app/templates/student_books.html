@@ -1,20 +1,76 @@
-<!DOCTYPE html>
-<html>
-<head><title>Student Books</title></head>
-<body>
-    <h2>Books borrowed by {{ student.name }}</h2>
-    <table border="1">
-        <tr><th>Txn ID</th><th>Book</th><th>Status</th><th>Issue Date</th><th>Due Date</th><th>Returned At</th></tr>
-        {% for txn in txns %}
-        <tr>
-            <td>{{ txn.txn_id }}</td>
-            <td>{{ txn.book.title }}</td>
-            <td>{{ txn.status }}</td>
-            <td>{{ txn.issue_date }}</td>
-            <td>{{ txn.due_date }}</td>
-            <td>{{ txn.returned_at or 'Not Returned' }}</td>
-        </tr>
-        {% endfor %}
-    </table>
-</body>
-</html>
+{% extends "base.html" %}
+
+{% block title %}Student Books | ShelfMate{% endblock %}
+{% block shell_subtitle %}A concise borrowing snapshot for one student across issued, pending, and returned titles.{% endblock %}
+
+{% block shell_actions %}
+<a href="{{ url_for('admin.student_lookup') }}" class="shell-link">Student Lookup</a>
+<a href="{{ url_for('admin.dashboard') }}" class="shell-link">Dashboard</a>
+<form method="POST" action="{{ url_for('auth.logout') }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <button type="submit" class="shell-danger">Logout</button>
+</form>
+{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <section class="dark-glass rounded-[32px] border border-white/10 px-6 py-8 text-white shadow-glow sm:px-8">
+        <p class="font-mono text-xs uppercase tracking-[0.3em] text-sand">Student Ledger</p>
+        <h1 class="mt-4 font-display text-4xl font-bold">{{ student.name }}</h1>
+        <div class="mt-6 grid gap-4 sm:grid-cols-3">
+            <div class="rounded-2xl border border-white/10 bg-white/10 p-4">
+                <p class="text-xs uppercase tracking-[0.2em] text-slate-300">USN</p>
+                <p class="mt-2 text-lg font-semibold">{{ student.usn }}</p>
+            </div>
+            <div class="rounded-2xl border border-white/10 bg-white/10 p-4">
+                <p class="text-xs uppercase tracking-[0.2em] text-slate-300">Department</p>
+                <p class="mt-2 text-lg font-semibold">{{ student.department }}</p>
+            </div>
+            <div class="rounded-2xl border border-white/10 bg-white/10 p-4">
+                <p class="text-xs uppercase tracking-[0.2em] text-slate-300">Semester</p>
+                <p class="mt-2 text-lg font-semibold">{{ student.semester or '-' }}</p>
+            </div>
+        </div>
+    </section>
+
+    <div class="overflow-hidden rounded-[32px] border border-white/60 bg-white/85 shadow-glow">
+        <div class="border-b border-slate-100 px-6 py-5">
+            <h2 class="font-display text-2xl font-bold text-ink">Borrowing history</h2>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="min-w-full text-left text-sm">
+                <thead class="bg-slate-950 text-white">
+                    <tr>
+                        <th class="px-4 py-4 font-semibold">Txn ID</th>
+                        <th class="px-4 py-4 font-semibold">Book</th>
+                        <th class="px-4 py-4 font-semibold">Status</th>
+                        <th class="px-4 py-4 font-semibold">Issued</th>
+                        <th class="px-4 py-4 font-semibold">Due</th>
+                        <th class="px-4 py-4 font-semibold">Returned</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 text-slate-700">
+                    {% for txn in txns %}
+                    <tr class="hover:bg-slate-50/80">
+                        <td class="px-4 py-4 font-mono text-xs">{{ txn.txn_id }}</td>
+                        <td class="px-4 py-4 font-medium">{{ txn.book.title }}</td>
+                        <td class="px-4 py-4">
+                            <span class="rounded-full px-3 py-1 text-xs font-semibold {% if txn.status == 'issued' %}bg-emerald-100 text-emerald-700{% elif txn.status == 'return_requested' %}bg-amber-100 text-amber-700{% elif txn.status == 'returned' %}bg-slate-200 text-slate-700{% elif txn.status == 'requested' %}bg-sky-100 text-sky-700{% else %}bg-rose-100 text-rose-700{% endif %}">
+                                {{ txn.status.replace('_', ' ')|title }}
+                            </span>
+                        </td>
+                        <td class="px-4 py-4">{{ txn.issue_date or '-' }}</td>
+                        <td class="px-4 py-4">{{ txn.due_date or '-' }}</td>
+                        <td class="px-4 py-4">{{ txn.returned_at or '-' }}</td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="6" class="px-4 py-8 text-center text-slate-500">No borrowing history found for this student yet.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

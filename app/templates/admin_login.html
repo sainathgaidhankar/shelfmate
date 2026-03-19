@@ -1,65 +1,43 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Admin Login | ShelfMate</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <style>
-        body {
-            background: linear-gradient(135deg, #1e3c72, #2a5298);
-            animation: fadeIn 1s ease-in;
-            color: white;
-        }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        @keyframes slideUp { from { transform: translateY(50px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+{% extends "base.html" %}
 
-        .card-glass {
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(8px);
-            border-radius: 20px;
-            box-shadow: 0 8px 25px rgba(0,0,0,0.3);
-            animation: slideUp 1s ease-out;
-        }
-        .btn-animated {
-            font-size: 1.1rem; font-weight: bold;
-            border-radius: 10px; padding: 10px 20px;
-            transition: transform 0.3s;
-        }
-        .btn-animated:hover { transform: scale(1.05); }
-    </style>
-</head>
-<body>
-    <div class="container d-flex justify-content-center align-items-center vh-100">
-        <div class="col-md-5 card-glass p-4">
-            <h2 class="text-center mb-4">🔑 Admin Login</h2>
+{% block title %}Admin Login | ShelfMate{% endblock %}
+{% block shell_subtitle %}Library operations access for approvals, issue, return, and follow-up workflows.{% endblock %}
 
-            <!-- Flash messages -->
-            {% with messages = get_flashed_messages(with_categories=true) %}
-              {% if messages %}
-                {% for category, message in messages %}
-                  <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
-                    {{ message }}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                  </div>
-                {% endfor %}
-              {% endif %}
-            {% endwith %}
+{% block shell_actions %}
+<a href="{{ url_for('main.welcome') }}" class="shell-link">Home</a>
+<a href="{{ url_for('auth.login') }}" class="shell-link">Student Login</a>
+{% endblock %}
 
-            <!-- Form -->
-            <form method="POST" action="{{ url_for('auth.admin_login') }}">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <div class="mb-3">
-                    <label for="email" class="form-label">Admin Email</label>
-                    <input type="email" class="form-control" id="email" name="email" placeholder="admin@shelfmate.com" required>
-                </div>
-                <div class="mb-3">
-                    <label for="password" class="form-label">Password</label>
-                    <input type="password" class="form-control" id="password" name="password" placeholder="Enter password" required>
-                </div>
-                <button type="submit" class="btn btn-dark w-100 btn-animated">Login</button>
-            </form>
+{% block content %}
+<div class="mx-auto grid max-w-5xl gap-6 lg:grid-cols-[1fr_0.95fr]">
+    <div class="glass-panel order-2 rounded-[32px] border border-white/60 p-6 shadow-glow sm:p-8 lg:order-1">
+        <h2 class="font-display text-3xl font-bold text-ink">Admin Login</h2>
+        <p class="mt-2 text-sm text-slate-600">Sign in to manage requests, direct issue, barcode returns, and overdue follow-up.</p>
+        <form method="POST" action="{{ url_for('auth.admin_login') }}" class="mt-8 space-y-5">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div>
+                <label for="email" class="mb-2 block text-sm font-semibold text-slate-700">Admin Email</label>
+                <input id="email" type="email" name="email" required class="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-900 outline-none transition focus:border-teal-500 focus:ring-4 focus:ring-teal-100" placeholder="admin@shelfmate.com">
+            </div>
+            <div>
+                <label for="password" class="mb-2 block text-sm font-semibold text-slate-700">Password</label>
+                <input id="password" type="password" name="password" required class="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-900 outline-none transition focus:border-teal-500 focus:ring-4 focus:ring-teal-100" placeholder="Enter your password">
+            </div>
+<button type="submit" class="btn-core btn-primary w-full rounded-2xl px-4 py-3 text-sm">Open Admin Workspace</button>
+        </form>
+    </div>
+
+    <div class="dark-glass order-1 rounded-[32px] border border-white/10 px-6 py-8 text-white shadow-glow sm:px-8 lg:order-2">
+        <p class="font-mono text-xs uppercase tracking-[0.3em] text-sand">Operations Console</p>
+        <h1 class="mt-4 font-display text-4xl font-bold">Keep the library desk moving.</h1>
+        <p class="mt-4 text-sm leading-7 text-slate-300 sm:text-base">
+            Approve signups, issue books directly for walk-ins, track overdue students, send reminders, and confirm returns from barcode scans.
+        </p>
+        <div class="mt-8 grid gap-3">
+            <div class="rounded-2xl border border-white/10 bg-white/10 px-4 py-3">Student approvals and request handling</div>
+            <div class="rounded-2xl border border-white/10 bg-white/10 px-4 py-3">Barcode lookup and return confirmation</div>
+            <div class="rounded-2xl border border-white/10 bg-white/10 px-4 py-3">Overdue reminders and direct issue workflows</div>
         </div>
     </div>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-</body>
-</html>
+</div>
+{% endblock %}

@@ -11,6 +11,7 @@ class Student(UserMixin, db.Model):
     usn = db.Column(db.String(50))
     department = db.Column(db.String(50))
     section = db.Column(db.String(10))
+    semester = db.Column(db.String(20))
     contact = db.Column(db.String(20))
     email = db.Column(db.String(100), unique=True)
     password = db.Column(db.String(200))

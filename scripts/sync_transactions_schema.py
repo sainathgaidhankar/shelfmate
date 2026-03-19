@@ -18,10 +18,20 @@ def main():
     with app.app_context():
         inspector = inspect(db.engine)
         columns = {column["name"] for column in inspector.get_columns("transactions")}
+        student_columns = {column["name"] for column in inspector.get_columns("students")}
+
+        if "semester" not in student_columns:
+            db.session.execute(
+                text("ALTER TABLE students ADD COLUMN semester VARCHAR(20) NULL AFTER section")
+            )
 
         if "due_date" not in columns:
             db.session.execute(text("ALTER TABLE transactions ADD COLUMN due_date DATE NULL AFTER issue_date"))
             db.session.execute(text("UPDATE transactions SET due_date = return_date WHERE due_date IS NULL"))
+        if "admin_note" not in columns:
+            db.session.execute(text("ALTER TABLE transactions ADD COLUMN admin_note VARCHAR(255) NULL AFTER barcode"))
+        if "reminder_sent_at" not in columns:
+            db.session.execute(text("ALTER TABLE transactions ADD COLUMN reminder_sent_at DATE NULL AFTER admin_note"))
 
         db.session.execute(
             text("ALTER TABLE transactions MODIFY student_id INT NOT NULL")

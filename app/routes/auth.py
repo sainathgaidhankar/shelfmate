@@ -23,6 +23,7 @@ def register():
             usn=request.form["usn"],
             department=request.form["department"],
             section=request.form["section"],
+            semester=request.form["semester"],
             contact=request.form["contact"],
             email=request.form["email"],
             password=generate_password_hash(request.form["password"]),

@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}ShelfMate{% endblock %}</title>
+    <script>
+        (() => {
+            const savedTheme = localStorage.getItem("shelfmate-theme");
+            document.documentElement.dataset.theme = savedTheme || "dark";
+        })();
+    </script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ["Outfit", "ui-sans-serif", "system-ui"],
+                        display: ["Space Grotesk", "ui-sans-serif", "system-ui"],
+                        mono: ["IBM Plex Mono", "ui-monospace", "monospace"],
+                    },
+                    colors: {
+                        primary: "#f97316",
+                        secondary: "#14b8a6",
+                        accent: "#8b5cf6",
+                        sand: "#f3d7a3",
+                        coral: "#ef7d57",
+                    },
+                    boxShadow: {
+                        glow: "0 25px 60px rgba(8, 17, 31, 0.22)",
+                        neo: "4px 4px 0px 0px rgba(0, 0, 0, 1)",
+                    },
+                },
+            },
+        };
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Outfit:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --page-gradient: radial-gradient(circle at top left, rgba(243,215,163,0.24), transparent 24%), radial-gradient(circle at top right, rgba(20,184,166,0.22), transparent 22%), radial-gradient(circle at bottom center, rgba(139,92,246,0.14), transparent 26%), linear-gradient(160deg, #08111f, #10233e 48%, #16314c);
+            --grid-line: rgba(255, 255, 255, 0.05);
+            --shell-surface: rgba(8, 17, 31, 0.56);
+            --shell-border: rgba(255, 255, 255, 0.10);
+            --shell-foreground: #f8fafc;
+            --shell-subtitle: #cbd5e1;
+            --panel-surface: linear-gradient(180deg, rgba(255,255,255,0.92), rgba(255,255,255,0.82));
+            --panel-border: rgba(255,255,255,0.14);
+            --panel-text: #1f2937;
+            --muted-text: #64748b;
+            --input-bg: rgba(255,255,255,0.92);
+            --input-border: #dbe3ee;
+            --input-text: #0f172a;
+            --table-head: #08111f;
+            --table-row-hover: rgba(241,245,249,0.82);
+        }
+
+        html[data-theme="light"] {
+            --page-gradient: radial-gradient(circle at top left, rgba(249,115,22,0.12), transparent 22%), radial-gradient(circle at top right, rgba(20,184,166,0.10), transparent 20%), linear-gradient(180deg, #fdfbf7, #f7f4ee 45%, #fdfbf7);
+            --grid-line: rgba(17, 24, 39, 0.035);
+            --shell-surface: rgba(255,255,255,0.86);
+            --shell-border: rgba(15,23,42,0.08);
+            --shell-foreground: #0f172a;
+            --shell-subtitle: #64748b;
+            --panel-surface: linear-gradient(180deg, rgba(255,255,255,0.92), rgba(255,255,255,0.82));
+            --panel-border: rgba(15,23,42,0.08);
+            --panel-text: #1f2937;
+            --muted-text: #64748b;
+            --input-bg: rgba(255,255,255,0.94);
+            --input-border: #e2e8f0;
+            --input-text: #0f172a;
+            --table-head: #0f172a;
+            --table-row-hover: rgba(241,245,249,0.85);
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            background: var(--page-gradient);
+            color: var(--shell-foreground);
+            font-family: "Outfit", sans-serif;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        h1, h2, h3, h4, h5, h6 {
+            font-family: "Space Grotesk", sans-serif;
+            letter-spacing: -0.03em;
+        }
+
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(8,17,31,0.35);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: rgba(203,213,225,0.38);
+            border-radius: 999px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(243,215,163,0.55);
+        }
+
+        .surface-grid {
+            background-image:
+                linear-gradient(var(--grid-line) 1px, transparent 1px),
+                linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+            background-size: 32px 32px;
+        }
+
+        .glass-panel {
+            background: var(--panel-surface);
+            border-color: var(--panel-border) !important;
+            color: var(--panel-text);
+            backdrop-filter: blur(18px);
+            box-shadow: 0 25px 60px rgba(8, 17, 31, 0.20);
+        }
+
+        .dark-glass {
+            background: linear-gradient(180deg, rgba(8,17,31,0.82), rgba(8,17,31,0.70));
+            border-color: rgba(255,255,255,0.10) !important;
+            backdrop-filter: blur(20px);
+        }
+
+        .app-shell {
+            background: var(--shell-surface);
+            border-color: var(--shell-border);
+            color: var(--shell-foreground);
+        }
+
+        .shell-title {
+            color: var(--shell-foreground);
+        }
+
+        .shell-subtitle {
+            color: var(--shell-subtitle);
+        }
+
+        .shell-link,
+        .shell-danger,
+        .btn-core {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+            font-weight: 600;
+        }
+
+        .shell-link {
+            border-radius: 999px;
+            border: 1px solid var(--shell-border);
+            background: rgba(255,255,255,0.12);
+            padding: 0.625rem 1rem;
+            font-size: 0.875rem;
+            color: var(--shell-foreground);
+            box-shadow: inset 0 1px 0 rgba(255,255,255,0.06);
+        }
+
+        .shell-link:hover {
+            transform: translateY(-1px);
+            background: rgba(255,255,255,0.18);
+        }
+
+        html[data-theme="light"] .shell-link {
+            background: rgba(255,255,255,0.92);
+            color: #0f172a;
+            border-color: rgba(15,23,42,0.10);
+            box-shadow: 0 8px 22px rgba(15,23,42,0.06);
+        }
+
+        html[data-theme="light"] .shell-link:hover {
+            background: rgba(255,255,255,1);
+        }
+
+        .shell-danger {
+            border-radius: 999px;
+            padding: 0.625rem 1rem;
+            font-size: 0.875rem;
+            color: #fff;
+            background: #ef4444;
+        }
+
+        .shell-danger:hover {
+            background: #dc2626;
+            transform: translateY(-1px);
+        }
+
+        .theme-toggle {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.65rem;
+            border-radius: 999px;
+            border: 1px solid var(--shell-border);
+            background: rgba(255,255,255,0.08);
+            padding: 0.45rem 0.8rem;
+            color: var(--shell-foreground);
+            transition: all 0.2s ease;
+        }
+
+        .theme-toggle:hover {
+            background: rgba(255,255,255,0.14);
+        }
+
+        html[data-theme="light"] .theme-toggle {
+            background: rgba(255,255,255,0.56);
+        }
+
+        html[data-theme="light"] .theme-toggle:hover {
+            background: rgba(255,255,255,0.78);
+        }
+
+        .theme-toggle-track {
+            position: relative;
+            height: 1.5rem;
+            width: 2.9rem;
+            border-radius: 999px;
+            background: rgba(255,255,255,0.16);
+        }
+
+        html[data-theme="light"] .theme-toggle-track {
+            background: rgba(15,23,42,0.14);
+        }
+
+        .theme-toggle-thumb {
+            position: absolute;
+            top: 0.15rem;
+            left: 0.18rem;
+            height: 1.2rem;
+            width: 1.2rem;
+            border-radius: 999px;
+            background: #f97316;
+            transition: transform 0.2s ease;
+        }
+
+        html[data-theme="light"] .theme-toggle-thumb {
+            transform: translateX(1.3rem);
+        }
+
+        .section-label {
+            font-family: "IBM Plex Mono", monospace;
+            text-transform: uppercase;
+            letter-spacing: 0.3em;
+        }
+
+        .btn-core {
+            border-radius: 0.95rem;
+        }
+
+        .btn-primary {
+            background: #f97316;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #ea580c;
+            transform: translateY(-1px);
+        }
+
+        .btn-secondary {
+            background: rgba(255,255,255,0.96);
+            color: #111827;
+            border: 1px solid rgba(203,213,225,1);
+            box-shadow: 0 8px 22px rgba(15,23,42,0.06);
+        }
+
+        .btn-secondary:hover {
+            background: #f9fafb;
+        }
+
+        html[data-theme="dark"] .btn-secondary {
+            background: rgba(15,23,42,0.88);
+            color: #f8fafc;
+            border-color: rgba(255,255,255,0.16);
+            box-shadow: inset 0 1px 0 rgba(255,255,255,0.04);
+        }
+
+        html[data-theme="dark"] .btn-secondary:hover {
+            background: rgba(30,41,59,0.96);
+        }
+
+        .field-input,
+        .field-select {
+            background: var(--input-bg);
+            border-color: var(--input-border) !important;
+            color: var(--input-text);
+        }
+
+        .field-input::placeholder {
+            color: var(--muted-text);
+        }
+
+        .field-label,
+        .surface-title {
+            color: var(--panel-text);
+        }
+
+        .soft-text,
+        .surface-copy {
+            color: var(--muted-text);
+        }
+
+        .table-shell {
+            overflow: hidden;
+            border-radius: 2rem;
+            border: 1px solid var(--panel-border);
+            background: var(--panel-surface);
+            box-shadow: 0 25px 60px rgba(8, 17, 31, 0.16);
+        }
+
+        .table-scroll {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .table-scroll table {
+            width: 100%;
+            min-width: 720px;
+            table-layout: auto;
+        }
+
+        .table-shell thead {
+            background: var(--table-head);
+        }
+
+        .table-shell tbody {
+            color: var(--panel-text);
+        }
+
+        .table-shell tbody tr:hover {
+            background: var(--table-row-hover);
+        }
+
+        .dark-stat {
+            background: linear-gradient(180deg, rgba(8,17,31,0.82), rgba(8,17,31,0.74));
+            border: 1px solid rgba(255,255,255,0.10);
+            color: white;
+            box-shadow: 0 25px 60px rgba(8, 17, 31, 0.22);
+        }
+
+        html[data-theme="light"] .dark-stat {
+            background: linear-gradient(180deg, rgba(255,255,255,0.95), rgba(248,250,252,0.86));
+            border-color: rgba(15,23,42,0.08);
+            color: #0f172a;
+        }
+
+        .stat-label {
+            text-transform: uppercase;
+            letter-spacing: 0.2em;
+            font-size: 0.75rem;
+        }
+
+        .dark-stat .stat-label {
+            color: #cbd5e1;
+        }
+
+        html[data-theme="light"] .dark-stat .stat-label {
+            color: #64748b;
+        }
+
+        @media (max-width: 767px) {
+            .table-shell {
+                border-radius: 1.5rem;
+            }
+
+            .table-scroll table {
+                min-width: 840px;
+            }
+        }
+    </style>
+    {% block head %}{% endblock %}
+</head>
+<body class="min-h-screen">
+    <div class="surface-grid min-h-screen">
+        <div class="pointer-events-none fixed inset-0 overflow-hidden">
+            <div class="absolute -left-20 top-16 h-56 w-56 rounded-full bg-sand/25 blur-3xl"></div>
+            <div class="absolute right-0 top-0 h-72 w-72 rounded-full bg-teal-400/20 blur-3xl"></div>
+            <div class="absolute bottom-0 left-1/3 h-64 w-64 rounded-full bg-violet-400/15 blur-3xl"></div>
+        </div>
+
+        <div class="relative mx-auto flex min-h-screen w-full max-w-[96rem] flex-col px-4 py-4 sm:px-6 lg:px-8 xl:px-10">
+            {% block shell %}
+            <header class="app-shell mb-6 rounded-[28px] border px-5 py-4 shadow-[0_18px_40px_rgba(15,23,42,0.12)] backdrop-blur-xl sm:px-6">
+                <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                        <a href="{{ url_for('main.welcome') }}" class="shell-title font-display text-3xl font-bold tracking-tight">ShelfMate</a>
+                        <p class="shell-subtitle mt-1 text-sm">{% block shell_subtitle %}Modern library operations made simple.{% endblock %}</p>
+                    </div>
+                    <div class="flex flex-wrap items-center gap-2">
+                        <button type="button" id="theme-toggle" class="theme-toggle text-sm font-semibold" aria-label="Toggle theme">
+                            <span id="theme-label">Dark</span>
+                            <span class="theme-toggle-track">
+                                <span class="theme-toggle-thumb"></span>
+                            </span>
+                        </button>
+                        {% block shell_actions %}{% endblock %}
+                    </div>
+                </div>
+            </header>
+
+            {% with messages = get_flashed_messages(with_categories=true) %}
+              {% if messages %}
+                <div class="mb-6 space-y-3">
+                  {% for category, message in messages %}
+                    <div class="glass-panel rounded-2xl border px-4 py-3 shadow-lg {% if category == 'success' %}border-emerald-200/70 bg-emerald-50/90 text-emerald-900{% elif category in ['danger', 'error'] %}border-rose-200/80 bg-rose-50/90 text-rose-900{% elif category == 'warning' %}border-amber-200/80 bg-amber-50/90 text-amber-900{% else %}border-sky-200/80 bg-sky-50/90 text-sky-900{% endif %}">
+                        <div class="flex items-start justify-between gap-3">
+                            <p class="text-sm font-medium sm:text-base">{{ message }}</p>
+                        </div>
+                    </div>
+                  {% endfor %}
+                </div>
+              {% endif %}
+            {% endwith %}
+
+            <main class="flex-1">
+                {% block content %}{% endblock %}
+            </main>
+            {% endblock %}
+        </div>
+    </div>
+    <script>
+        (() => {
+            const root = document.documentElement;
+            const toggle = document.getElementById("theme-toggle");
+            const label = document.getElementById("theme-label");
+            const applyLabel = () => {
+                if (label) {
+                    label.textContent = root.dataset.theme === "light" ? "Light" : "Dark";
+                }
+            };
+            applyLabel();
+            if (toggle) {
+                toggle.addEventListener("click", () => {
+                    const nextTheme = root.dataset.theme === "dark" ? "light" : "dark";
+                    root.dataset.theme = nextTheme;
+                    localStorage.setItem("shelfmate-theme", nextTheme);
+                    applyLabel();
+                });
+            }
+        })();
+    </script>
+</body>
+</html>

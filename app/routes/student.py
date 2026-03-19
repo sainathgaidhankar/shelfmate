@@ -1,6 +1,6 @@
 from flask import Blueprint, flash, redirect, render_template, request, url_for
 from flask_login import current_user, login_required
-from sqlalchemy import select
+from sqlalchemy import or_, select
 
 from app.extensions import db
 from app.models import Book, Transaction
@@ -15,12 +15,50 @@ def dashboard():
     if current_user.is_admin:
         return redirect(url_for("admin.dashboard"))
 
-    books = Book.query.all()
-    txns = Transaction.query.filter_by(student_id=current_user.student_id).all()
+    page = request.args.get("page", default=1, type=int)
+    search = request.args.get("search", default="", type=str).strip()
+    department = request.args.get("department", default="", type=str).strip()
+    sort = request.args.get("sort", default="title", type=str)
+
+    books_query = Book.query
+    if search:
+        like_term = f"%{search}%"
+        books_query = books_query.filter(
+            or_(
+                Book.title.ilike(like_term),
+                Book.author.ilike(like_term),
+                Book.subject.ilike(like_term),
+            )
+        )
+    if department:
+        books_query = books_query.filter(Book.department == department)
+
+    sort_options = {
+        "title": Book.title.asc(),
+        "author": Book.author.asc(),
+        "subject": Book.subject.asc(),
+        "department": Book.department.asc(),
+        "availability": Book.issued_copies.asc(),
+    }
+    books_query = books_query.order_by(sort_options.get(sort, Book.title.asc()))
+
+    books_pagination = books_query.paginate(page=page, per_page=5, error_out=False)
+    txns = (
+        Transaction.query.filter_by(student_id=current_user.student_id)
+        .order_by(Transaction.txn_id.desc())
+        .all()
+    )
+    departments = [row[0] for row in db.session.query(Book.department).distinct().order_by(Book.department).all()]
+
     return render_template(
         "student_dashboard.html",
         student=current_user,
-        books=books,
+        books=books_pagination.items,
+        books_pagination=books_pagination,
+        search=search,
+        department=department,
+        sort=sort,
+        departments=departments,
         txns=txns,
     )
 
@@ -54,6 +92,7 @@ def request_book():
         due_date=request.form["due_date"],
         issue_date=None,
         barcode=None,
+        admin_note=None,
     )
     db.session.add(new_txn)
     db.session.commit()

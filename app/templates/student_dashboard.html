@@ -1,170 +1,180 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Student Dashboard | ShelfMate</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <style>
-        body {
-            background: linear-gradient(135deg, #1e3c72, #2a5298);
-            animation: fadeIn 1s ease-in;
-            color: white;
-            font-size: 1.2rem;
-        }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        @keyframes slideUp { from { transform: translateY(50px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+{% extends "base.html" %}
 
-        .card {
-            backdrop-filter: blur(10px);
-            background: rgba(255,255,255,0.1);
-            border-radius: 15px;
-            padding: 30px;
-            box-shadow: 0 8px 25px rgba(0,0,0,0.3);
-            animation: slideUp 1s ease-out;
-        }
-        .card h2 {
-            font-size: 2.2rem;
-            font-weight: bold;
-            margin-bottom: 20px;
-            text-align: center;
-        }
-        table {
-            background: rgba(255,255,255,0.85);
-            border-radius: 10px;
-            font-size: 1.1rem;
-        }
-        th { font-size: 1.2rem; font-weight: bold; }
-        .btn-custom {
-            background: linear-gradient(135deg, #007BFF, #00C851);
-            border: none;
-            color: white;
-            font-weight: bold;
-            border-radius: 8px;
-            font-size: 1.1rem;
-            transition: transform 0.3s;
-        }
-        .btn-custom:hover { transform: scale(1.05); }
-    </style>
-</head>
-<body>
-    <!-- Navbar -->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-        <div class="container-fluid">
-            <a class="navbar-brand fs-4" href="{{ url_for('student.dashboard') }}">ShelfMate Student</a>
-            <div class="d-flex">
-                <form method="POST" action="{{ url_for('auth.logout') }}" class="mb-0">
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                    <button type="submit" class="btn btn-danger">Logout</button>
+{% block title %}Student Dashboard | ShelfMate{% endblock %}
+{% block shell_subtitle %}Borrowing, requests, and return tracking in one responsive student workspace.{% endblock %}
+
+{% block shell_actions %}
+<a href="{{ url_for('student.dashboard') }}" class="shell-link">Dashboard</a>
+<form method="POST" action="{{ url_for('auth.logout') }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <button type="submit" class="shell-danger">Logout</button>
+</form>
+{% endblock %}
+
+{% block content %}
+<div class="space-y-7">
+    <section class="grid gap-6 xl:grid-cols-[0.92fr_1.08fr]">
+        <div class="dark-glass rounded-[32px] border border-white/10 px-6 py-8 text-white shadow-glow sm:px-8">
+            <p class="font-mono text-xs uppercase tracking-[0.3em] text-sand">Student Profile</p>
+            <h1 class="mt-4 font-display text-4xl font-bold">{{ student.name }}</h1>
+            <div class="mt-6 grid gap-4 sm:grid-cols-2">
+                <div class="rounded-2xl border border-white/10 bg-white/10 p-4">
+                    <p class="text-xs uppercase tracking-[0.2em] text-slate-300">USN</p>
+                    <p class="mt-2 text-lg font-semibold">{{ student.usn }}</p>
+                </div>
+                <div class="rounded-2xl border border-white/10 bg-white/10 p-4">
+                    <p class="text-xs uppercase tracking-[0.2em] text-slate-300">Department</p>
+                    <p class="mt-2 text-lg font-semibold">{{ student.department }}</p>
+                </div>
+                <div class="rounded-2xl border border-white/10 bg-white/10 p-4">
+                    <p class="text-xs uppercase tracking-[0.2em] text-slate-300">Section</p>
+                    <p class="mt-2 text-lg font-semibold">{{ student.section }}</p>
+                </div>
+                <div class="rounded-2xl border border-white/10 bg-white/10 p-4">
+                    <p class="text-xs uppercase tracking-[0.2em] text-slate-300">Semester</p>
+                    <p class="mt-2 text-lg font-semibold">{{ student.semester or '-' }}</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="glass-panel rounded-[32px] border border-white/60 p-6 shadow-glow sm:p-8">
+            <div class="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+                <div>
+                    <p class="section-label text-xs text-orange-600">Catalog Search</p>
+                    <h2 class="mt-3 font-display text-3xl font-bold text-ink">Available books</h2>
+                </div>
+                <form method="GET" action="{{ url_for('student.dashboard') }}" class="grid w-full gap-3 md:grid-cols-4 lg:max-w-4xl">
+                    <input type="text" name="search" value="{{ search }}" class="field-input rounded-2xl border px-4 py-3 text-sm outline-none transition focus:border-orange-500 focus:ring-4 focus:ring-orange-100" placeholder="Search title, author, subject">
+                    <select name="department" class="field-select rounded-2xl border px-4 py-3 text-sm outline-none transition focus:border-orange-500 focus:ring-4 focus:ring-orange-100">
+                        <option value="">All Departments</option>
+                        {% for dept in departments %}
+                        <option value="{{ dept }}" {% if department == dept %}selected{% endif %}>{{ dept }}</option>
+                        {% endfor %}
+                    </select>
+                    <select name="sort" class="field-select rounded-2xl border px-4 py-3 text-sm outline-none transition focus:border-orange-500 focus:ring-4 focus:ring-orange-100">
+                        <option value="title" {% if sort == 'title' %}selected{% endif %}>Sort by Title</option>
+                        <option value="author" {% if sort == 'author' %}selected{% endif %}>Sort by Author</option>
+                        <option value="subject" {% if sort == 'subject' %}selected{% endif %}>Sort by Subject</option>
+                        <option value="department" {% if sort == 'department' %}selected{% endif %}>Sort by Department</option>
+                        <option value="availability" {% if sort == 'availability' %}selected{% endif %}>Sort by Availability</option>
+                    </select>
+                    <button type="submit" class="btn-core btn-primary rounded-2xl px-4 py-3 text-sm">Apply</button>
                 </form>
             </div>
         </div>
-    </nav>
+    </section>
 
-    <!-- Flash Alerts -->
-    {% with messages = get_flashed_messages(with_categories=true) %}
-      {% if messages %}
-        <div class="container mt-3">
-          {% for category, message in messages %}
-            <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
-              {{ message }}
-              <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-            </div>
-          {% endfor %}
-        </div>
-      {% endif %}
-    {% endwith %}
-
-    <div class="container mt-4">
-        <!-- Welcome Card -->
-        <div class="card mb-4">
-            <h2>Welcome, {{ student.name }}</h2>
-            <p class="text-center">USN: {{ student.usn }} | Department: {{ student.department }} | Section: {{ student.section }}</p>
-        </div>
-
-        <!-- Available Books -->
-        <div class="card mb-4">
-            <h2>Available Books</h2>
-            <table class="table table-striped table-hover">
-                <thead class="table-dark">
+    <div class="table-shell">
+        <div class="table-scroll">
+            <table class="w-full min-w-full text-left text-sm">
+                <thead class="bg-slate-950 text-white">
                     <tr>
-                        <th>Book ID</th>
-                        <th>Title</th>
-                        <th>Author</th>
-                        <th>Department</th>
-                        <th>Subject</th>
-                        <th>Available Copies</th>
-                        <th>Action</th>
+                        <th class="px-4 py-4 font-semibold">Book ID</th>
+                        <th class="px-4 py-4 font-semibold">Title</th>
+                        <th class="px-4 py-4 font-semibold">Author</th>
+                        <th class="px-4 py-4 font-semibold">Department</th>
+                        <th class="px-4 py-4 font-semibold">Subject</th>
+                        <th class="px-4 py-4 font-semibold">Available</th>
+                        <th class="px-4 py-4 font-semibold">Request</th>
                     </tr>
                 </thead>
-                <tbody>
+                <tbody class="divide-y divide-slate-100 text-slate-700">
                     {% for book in books %}
-                    <tr>
-                        <td>{{ book.book_id }}</td>
-                        <td>{{ book.title }}</td>
-                        <td>{{ book.author }}</td>
-                        <td>{{ book.department }}</td>
-                        <td>{{ book.subject }}</td>
-                        <td>{{ book.available_copies }}</td>
-                        <td>
+                    <tr class="align-top">
+                        <td class="px-4 py-4 font-mono text-xs">{{ book.book_id }}</td>
+                        <td class="px-4 py-4 font-medium">{{ book.title }}</td>
+                        <td class="px-4 py-4">{{ book.author }}</td>
+                        <td class="px-4 py-4">{{ book.department }}</td>
+                        <td class="px-4 py-4">{{ book.subject }}</td>
+                        <td class="px-4 py-4">{{ book.available_copies }}</td>
+                        <td class="px-4 py-4">
                             {% if book.available_copies > 0 %}
-                            <form method="POST" action="{{ url_for('student.request_book') }}">
+                            <form method="POST" action="{{ url_for('student.request_book') }}" class="space-y-2">
                                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                 <input type="hidden" name="book_id" value="{{ book.book_id }}">
-                                <input type="date" name="due_date" class="form-control mb-2" required>
-                                <button type="submit" class="btn btn-custom btn-sm">Request</button>
+                                <input type="date" name="due_date" required class="field-input w-full rounded-xl border px-3 py-2 text-xs outline-none transition focus:border-orange-500 focus:ring-4 focus:ring-orange-100">
+                                <button type="submit" class="btn-core btn-primary w-full rounded-xl px-3 py-2 text-xs">Request Book</button>
                             </form>
                             {% else %}
-                            <span class="text-danger">Not Available</span>
+                            <span class="inline-flex rounded-full bg-rose-50 px-3 py-1 text-xs font-semibold text-rose-600">Unavailable</span>
                             {% endif %}
                         </td>
                     </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-
-        <!-- Student Transactions -->
-        <div class="card">
-            <h2>My Transactions</h2>
-            <table class="table table-striped table-hover">
-                <thead class="table-dark">
-                    <tr>
-                        <th>Txn ID</th>
-                        <th>Book</th>
-                        <th>Status</th>
-                        <th>Issue Date</th>
-                        <th>Due Date</th>
-                        <th>Returned At</th>
-                        <th>Barcode</th>
-                        <th>Action</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for txn in txns %}
-                    <tr>
-                        <td>{{ txn.txn_id }}</td>
-                        <td>{{ txn.book.title }}</td>
-                        <td>{{ txn.status }}</td>
-                        <td>{{ txn.issue_date }}</td>
-                        <td>{{ txn.due_date }}</td>
-                        <td>{{ txn.returned_at }}</td>
-                        <td>{{ txn.barcode }}</td>
-                        <td>
-                            {% if txn.status == "issued" %}
-                            <form method="POST" action="{{ url_for('student.request_return', txn_id=txn.txn_id) }}">
-                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                <button type="submit" class="btn btn-warning btn-sm">Request Return</button>
-                            </form>
-                            {% elif txn.status == "return_requested" %}
-                            <span class="text-info">Awaiting Admin Approval</span>
-                            {% elif txn.status == "returned" %}
-                            <span class="text-success">Returned</span>
-                            {% endif %}
-                        </td>
-                    </tr>
+                    {% else %}
+                    <tr><td colspan="7" class="px-4 py-8 text-center text-slate-500">No books found.</td></tr>
                     {% endfor %}
                 </tbody>
             </table>
         </div>
     </div>
-</body>
-</html>
+
+    {% if books_pagination.pages > 1 %}
+    <div class="flex flex-wrap justify-center gap-2">
+        {% for page_num in books_pagination.iter_pages() %}
+            {% if page_num %}
+            <a href="{{ url_for('student.dashboard', page=page_num, search=search, department=department, sort=sort) }}" class="rounded-xl px-4 py-2 text-sm font-semibold {% if page_num == books_pagination.page %}bg-orange-500 text-white{% else %}glass-panel text-slate-700{% endif %}">{{ page_num }}</a>
+            {% else %}
+            <span class="rounded-xl px-3 py-2 text-sm text-white/80">...</span>
+            {% endif %}
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <div class="table-shell">
+        <div class="border-b border-slate-100 px-6 py-5">
+            <h2 class="font-display text-2xl font-bold text-ink">My transactions</h2>
+        </div>
+        <div class="table-scroll">
+            <table class="w-full min-w-full text-left text-sm">
+                <thead class="bg-slate-950 text-white">
+                    <tr>
+                        <th class="px-4 py-4 font-semibold">Txn ID</th>
+                        <th class="px-4 py-4 font-semibold">Book</th>
+                        <th class="px-4 py-4 font-semibold">Status</th>
+                        <th class="px-4 py-4 font-semibold">Issue</th>
+                        <th class="px-4 py-4 font-semibold">Due</th>
+                        <th class="px-4 py-4 font-semibold">Returned</th>
+                        <th class="px-4 py-4 font-semibold">Barcode</th>
+                        <th class="px-4 py-4 font-semibold">Action</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 text-slate-700">
+                    {% for txn in txns %}
+                    <tr class="align-top">
+                        <td class="px-4 py-4 font-mono text-xs">{{ txn.txn_id }}</td>
+                        <td class="px-4 py-4 font-medium">{{ txn.book.title }}</td>
+                        <td class="px-4 py-4">
+                            <div class="font-medium">{{ txn.status }}</div>
+                            {% if txn.is_overdue %}<div class="mt-1 text-xs font-semibold text-rose-600">Overdue</div>{% endif %}
+                            {% if txn.admin_note %}<div class="mt-1 text-xs text-slate-500">{{ txn.admin_note }}</div>{% endif %}
+                        </td>
+                        <td class="px-4 py-4">{{ txn.issue_date or '-' }}</td>
+                        <td class="px-4 py-4">{{ txn.due_date or '-' }}</td>
+                        <td class="px-4 py-4">{{ txn.returned_at or '-' }}</td>
+                        <td class="px-4 py-4 font-mono text-xs">{{ txn.barcode or '-' }}</td>
+                        <td class="px-4 py-4">
+                            {% if txn.status == "issued" %}
+                            <form method="POST" action="{{ url_for('student.request_return', txn_id=txn.txn_id) }}">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <button type="submit" class="btn-core rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-700 transition hover:bg-amber-100">Request Return</button>
+                            </form>
+                            {% elif txn.status == "return_requested" %}
+                            <span class="text-xs font-medium text-sky-600">Awaiting admin</span>
+                            {% elif txn.status == "returned" %}
+                            <span class="text-xs font-medium text-emerald-600">Returned</span>
+                            {% elif txn.status == "rejected" %}
+                            <span class="text-xs font-medium text-rose-600">Rejected</span>
+                            {% else %}
+                            <span class="text-xs text-slate-400">No action</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="8" class="px-4 py-8 text-center text-slate-500">No transactions yet.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

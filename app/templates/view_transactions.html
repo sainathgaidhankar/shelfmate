@@ -1,108 +1,71 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Transactions | ShelfMate</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <style>
-        body {
-            background: linear-gradient(135deg, #1e3c72, #2a5298);
-            animation: fadeIn 1s ease-in;
-            color: white;
-            font-size: 1.2rem;
-        }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        @keyframes slideUp { from { transform: translateY(50px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+{% extends "base.html" %}
 
-        .card {
-            backdrop-filter: blur(10px);
-            background: rgba(255,255,255,0.1);
-            border-radius: 15px;
-            padding: 30px;
-            box-shadow: 0 8px 25px rgba(0,0,0,0.3);
-            animation: slideUp 1s ease-out;
-        }
-        .card h2 {
-            font-size: 2.2rem;
-            font-weight: bold;
-            margin-bottom: 20px;
-            text-align: center;
-        }
-        table {
-            background: rgba(255,255,255,0.85);
-            border-radius: 10px;
-            font-size: 1.1rem;
-        }
-        th { font-size: 1.2rem; font-weight: bold; }
-        .btn-custom {
-            background: linear-gradient(135deg, #007BFF, #00C851);
-            border: none;
-            color: white;
-            font-weight: bold;
-            border-radius: 8px;
-            font-size: 1.1rem;
-            transition: transform 0.3s;
-        }
-        .btn-custom:hover { transform: scale(1.05); }
-    </style>
-</head>
-<body>
-    <!-- Navbar -->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-        <div class="container-fluid">
-            <a class="navbar-brand fs-4" href="{{ url_for('admin.dashboard') }}">ShelfMate Admin</a>
-            <div class="d-flex">
-                <form method="POST" action="{{ url_for('auth.logout') }}" class="mb-0">
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                    <button type="submit" class="btn btn-danger">Logout</button>
-                </form>
-            </div>
-        </div>
-    </nav>
+{% block title %}Transactions | ShelfMate{% endblock %}
+{% block shell_subtitle %}Full circulation history across requests, issues, returns, and overdue states.{% endblock %}
 
-    <div class="container mt-4">
-        <div class="card">
-            <h2>All Transactions</h2>
-            <table class="table table-striped table-hover">
-                <thead class="table-dark">
+{% block shell_actions %}
+<a href="{{ url_for('admin.dashboard') }}" class="shell-link">Dashboard</a>
+<a href="{{ url_for('admin.student_lookup') }}" class="shell-link">Student Lookup</a>
+<form method="POST" action="{{ url_for('auth.logout') }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <button type="submit" class="shell-danger">Logout</button>
+</form>
+{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <div class="glass-panel rounded-[32px] border border-white/60 p-6 shadow-glow sm:p-8">
+        <p class="font-mono text-xs uppercase tracking-[0.3em] text-teal-700">Operations</p>
+        <h1 class="mt-3 font-display text-3xl font-bold text-ink sm:text-4xl">All transactions</h1>
+    </div>
+    <div class="overflow-hidden rounded-[32px] border border-white/60 bg-white/85 shadow-glow">
+        <div class="overflow-x-auto">
+            <table class="min-w-full text-left text-sm">
+                <thead class="bg-slate-950 text-white">
                     <tr>
-                        <th>Txn ID</th>
-                        <th>Student</th>
-                        <th>Book</th>
-                        <th>Status</th>
-                        <th>Issue Date</th>
-                        <th>Due Date</th>
-                        <th>Returned At</th>
-                        <th>Barcode</th>
-                        <th>Action</th>
+                        <th class="px-4 py-4 font-semibold">Txn ID</th>
+                        <th class="px-4 py-4 font-semibold">Student</th>
+                        <th class="px-4 py-4 font-semibold">Book</th>
+                        <th class="px-4 py-4 font-semibold">Status</th>
+                        <th class="px-4 py-4 font-semibold">Issue Date</th>
+                        <th class="px-4 py-4 font-semibold">Due Date</th>
+                        <th class="px-4 py-4 font-semibold">Returned</th>
+                        <th class="px-4 py-4 font-semibold">Barcode</th>
+                        <th class="px-4 py-4 font-semibold">Action</th>
                     </tr>
                 </thead>
-                <tbody>
+                <tbody class="divide-y divide-slate-100 text-slate-700">
                     {% for txn in txns %}
-                    <tr>
-                        <td>{{ txn.txn_id }}</td>
-                        <td>{{ txn.student.name }}</td>
-                        <td>{{ txn.book.title }}</td>
-                        <td>{{ txn.status }}</td>
-                        <td>{{ txn.issue_date }}</td>
-                        <td>{{ txn.due_date }}</td>
-                        <td>{{ txn.returned_at }}</td>
-                        <td>{{ txn.barcode }}</td>
-                        <td>
-                            {% if txn.status == "return_requested" %}
-                                <!-- Admin confirms return -->
-                                <form method="POST" action="{{ url_for('admin.confirm_return', txn_id=txn.txn_id) }}">
-                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                    <button type="submit" class="btn btn-success btn-sm">Confirm Return</button>
-                                </form>
-                            {% elif txn.status == "issued" %}
-                                <span class="text-muted">Awaiting student return request</span>
+                    <tr class="align-top hover:bg-slate-50/80">
+                        <td class="px-4 py-4 font-mono text-xs">{{ txn.txn_id }}</td>
+                        <td class="px-4 py-4">{{ txn.student.name }}</td>
+                        <td class="px-4 py-4">{{ txn.book.title }}</td>
+                        <td class="px-4 py-4">
+                            <div class="font-medium">{{ txn.status }}</div>
+                            {% if txn.is_overdue %}<div class="mt-1 text-xs font-semibold text-rose-600">Overdue</div>{% endif %}
+                            {% if txn.admin_note %}<div class="mt-1 text-xs text-slate-500">{{ txn.admin_note }}</div>{% endif %}
+                        </td>
+                        <td class="px-4 py-4">{{ txn.issue_date or '-' }}</td>
+                        <td class="px-4 py-4">{{ txn.due_date or '-' }}</td>
+                        <td class="px-4 py-4">{{ txn.returned_at or '-' }}</td>
+                        <td class="px-4 py-4 font-mono text-xs">{{ txn.barcode or '-' }}</td>
+                        <td class="px-4 py-4">
+                            {% if txn.status in ["issued", "return_requested"] %}
+                            <form method="POST" action="{{ url_for('admin.confirm_return', txn_id=txn.txn_id) }}">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <button type="submit" class="rounded-xl border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50">Confirm Return</button>
+                            </form>
+                            {% else %}
+                            <span class="text-xs text-slate-400">No action</span>
                             {% endif %}
                         </td>
                     </tr>
+                    {% else %}
+                    <tr><td colspan="9" class="px-4 py-8 text-center text-slate-500">No transactions found.</td></tr>
                     {% endfor %}
                 </tbody>
             </table>
         </div>
     </div>
-</body>
-</html>
+</div>
+{% endblock %}
