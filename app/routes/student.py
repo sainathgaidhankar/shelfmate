@@ -3,7 +3,8 @@ from flask_login import current_user, login_required
 from sqlalchemy import or_, select
 
 from app.extensions import db
-from app.models import Book, Transaction
+from app.models import Book, StudentUpdateRequest, Transaction
+from app.services.upload_service import save_uploaded_image
 
 
 student_bp = Blueprint("student", __name__)
@@ -60,7 +61,57 @@ def dashboard():
         sort=sort,
         departments=departments,
         txns=txns,
+        latest_update_request=(
+            StudentUpdateRequest.query.filter_by(student_id=current_user.student_id)
+            .order_by(StudentUpdateRequest.request_id.desc())
+            .first()
+        ),
     )
+
+
+@student_bp.route("/request_profile_update", methods=["POST"])
+@login_required
+def request_profile_update():
+    if current_user.is_admin:
+        return "Unauthorized"
+
+    contact = request.form.get("contact", "").strip()
+    section = request.form.get("section", "").strip()
+
+    if not contact and not section and not request.files.get("profile_image"):
+        flash("Add at least one profile change before submitting the request.", "warning")
+        return redirect(url_for("student.dashboard"))
+
+    existing_request = (
+        StudentUpdateRequest.query.filter_by(student_id=current_user.student_id, status="pending")
+        .order_by(StudentUpdateRequest.request_id.desc())
+        .first()
+    )
+    if existing_request:
+        flash("You already have a pending profile update request awaiting admin approval.", "warning")
+        return redirect(url_for("student.dashboard"))
+
+    try:
+        profile_image = save_uploaded_image(
+            request.files.get("profile_image"),
+            "STUDENT_UPLOAD_FOLDER",
+            "student-update",
+        )
+    except ValueError as exc:
+        flash(str(exc), "danger")
+        return redirect(url_for("student.dashboard"))
+
+    update_request = StudentUpdateRequest(
+        student_id=current_user.student_id,
+        requested_contact=contact or None,
+        requested_section=section or None,
+        requested_profile_image=profile_image,
+        status="pending",
+    )
+    db.session.add(update_request)
+    db.session.commit()
+    flash("Profile update request submitted. Await admin approval.", "info")
+    return redirect(url_for("student.dashboard"))
 
 
 @student_bp.route("/request_book", methods=["POST"])

@@ -22,6 +22,12 @@ class Student(UserMixin, db.Model):
     is_admin = db.Column(db.Boolean, default=False)
 
     transactions = db.relationship("Transaction", back_populates="student")
+    update_requests = db.relationship(
+        "StudentUpdateRequest",
+        back_populates="student",
+        cascade="all, delete-orphan",
+        order_by="desc(StudentUpdateRequest.request_id)",
+    )
 
     @property
     def academic_label(self):

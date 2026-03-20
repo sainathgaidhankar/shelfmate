@@ -52,6 +52,7 @@
                         <th class="px-4 py-4 font-semibold">Subject</th>
                         <th class="px-4 py-4 font-semibold">Total</th>
                         <th class="px-4 py-4 font-semibold">Available</th>
+                        <th class="px-4 py-4 font-semibold">Action</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100 text-slate-700">
@@ -62,7 +63,7 @@
                                 <img src="{{ url_for('static', filename=book.image_path) }}" alt="{{ book.title }}" class="h-16 w-12 rounded-2xl border border-slate-200 object-cover">
                                 <div>
                                     <div class="font-medium">{{ book.title }}</div>
-                                    <div class="mt-1 font-mono text-xs text-slate-500">#{{ book.book_id }}</div>
+                                    <div class="mt-1 font-mono text-xs text-slate-500">Book {{ ((books_pagination.page - 1) * books_pagination.per_page) + loop.index }}</div>
                                 </div>
                             </div>
                         </td>
@@ -71,9 +72,12 @@
                         <td class="px-4 py-4">{{ book.subject }}</td>
                         <td class="px-4 py-4">{{ book.total_copies }}</td>
                         <td class="px-4 py-4">{{ book.available_copies }}</td>
+                        <td class="px-4 py-4">
+                            <a href="{{ url_for('admin.edit_book', book_id=book.book_id) }}" class="btn-core btn-secondary rounded-xl px-3 py-2 text-xs">Edit Book</a>
+                        </td>
                     </tr>
                     {% else %}
-                    <tr><td colspan="6" class="px-4 py-8 text-center text-slate-500">No books found.</td></tr>
+                    <tr><td colspan="7" class="px-4 py-8 text-center text-slate-500">No books found.</td></tr>
                     {% endfor %}
                 </tbody>
             </table>

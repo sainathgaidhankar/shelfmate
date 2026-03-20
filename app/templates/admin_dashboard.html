@@ -27,6 +27,60 @@
 
     <section class="grid gap-6 xl:grid-cols-2">
         <div class="table-shell">
+            <div class="border-b border-slate-100 px-6 py-5"><h2 class="surface-title font-display text-2xl font-bold">Student profile update requests</h2></div>
+            <div class="table-scroll">
+                <table class="w-full min-w-full text-left text-sm">
+                    <thead class="bg-slate-950 text-white"><tr><th class="px-4 py-4 font-semibold">Student</th><th class="px-4 py-4 font-semibold">Current</th><th class="px-4 py-4 font-semibold">Requested</th><th class="px-4 py-4 font-semibold">Image</th><th class="px-4 py-4 font-semibold">Action</th></tr></thead>
+                    <tbody class="divide-y divide-slate-100 text-slate-700">
+                        {% for update in profile_update_requests %}
+                        <tr class="align-top">
+                            <td class="px-4 py-4">
+                                <div class="flex items-center gap-3">
+                                    <img src="{{ url_for('static', filename=update.student.image_path) }}" alt="{{ update.student.name }}" class="h-12 w-12 rounded-full border border-slate-200 object-cover">
+                                    <div>
+                                        <div class="font-medium">{{ update.student.name }}</div>
+                                        <div class="mt-1 font-mono text-xs text-slate-500">{{ update.student.usn }}</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-4 py-4 text-xs">
+                                <div><span class="font-semibold">Contact:</span> {{ update.student.contact or '-' }}</div>
+                                <div class="mt-1"><span class="font-semibold">Section:</span> {{ update.student.section or '-' }}</div>
+                            </td>
+                            <td class="px-4 py-4 text-xs">
+                                <div><span class="font-semibold">Contact:</span> {{ update.requested_contact or '-' }}</div>
+                                <div class="mt-1"><span class="font-semibold">Section:</span> {{ update.requested_section or '-' }}</div>
+                            </td>
+                            <td class="px-4 py-4">
+                                {% if update.requested_profile_image %}
+                                <img src="{{ url_for('static', filename=update.requested_profile_image) }}" alt="Requested profile" class="h-12 w-12 rounded-full border border-slate-200 object-cover">
+                                {% else %}
+                                <span class="text-xs text-slate-400">No new image</span>
+                                {% endif %}
+                            </td>
+                            <td class="px-4 py-4">
+                                <div class="space-y-2">
+                                    <form method="POST" action="{{ url_for('admin.approve_profile_update', request_id=update.request_id) }}">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <button type="submit" class="btn-core w-full rounded-xl bg-emerald-600 px-3 py-2 text-xs font-semibold text-white transition hover:bg-emerald-700">Approve</button>
+                                    </form>
+                                    <form method="POST" action="{{ url_for('admin.reject_profile_update', request_id=update.request_id) }}" class="space-y-2">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <input type="text" name="reason" class="field-input w-full rounded-xl border px-3 py-2 text-xs outline-none transition focus:border-rose-400 focus:ring-4 focus:ring-rose-100" placeholder="Reason for rejection">
+                                        <button type="submit" class="btn-core w-full rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700 transition hover:bg-rose-100">Reject</button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr><td colspan="5" class="px-4 py-8 text-center text-slate-500">No pending student profile updates.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="table-shell">
             <div class="border-b border-slate-100 px-6 py-5"><h2 class="surface-title font-display text-2xl font-bold">Pending student approvals</h2></div>
             <div class="table-scroll">
                 <table class="w-full min-w-full text-left text-sm">

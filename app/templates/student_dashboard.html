@@ -69,9 +69,46 @@
         </div>
     </section>
 
+    <section class="glass-panel rounded-[32px] border border-white/60 p-6 shadow-glow sm:p-8">
+        <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+            <div>
+                <p class="section-label text-xs text-orange-600">Profile Update</p>
+                <h2 class="mt-3 font-display text-3xl font-bold text-ink">Request profile changes</h2>
+                <p class="mt-2 text-sm text-slate-600">Image, contact number, and section updates require admin approval before they go live.</p>
+            </div>
+            {% if latest_update_request %}
+            <div class="rounded-2xl px-4 py-3 text-sm font-semibold {% if latest_update_request.status == 'pending' %}bg-amber-50 text-amber-700{% elif latest_update_request.status == 'approved' %}bg-emerald-50 text-emerald-700{% else %}bg-rose-50 text-rose-700{% endif %}">
+                Latest request: {{ latest_update_request.status|title }}
+            </div>
+            {% endif %}
+        </div>
+        <form method="POST" action="{{ url_for('student.request_profile_update') }}" enctype="multipart/form-data" class="mt-6 grid gap-4 md:grid-cols-3">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div>
+                <label class="mb-2 block text-sm font-semibold text-slate-700">Updated Contact</label>
+                <input type="text" name="contact" class="field-input w-full rounded-2xl border px-4 py-3 text-sm outline-none transition focus:border-orange-500 focus:ring-4 focus:ring-orange-100" placeholder="{{ student.contact or 'New contact number' }}">
+            </div>
+            <div>
+                <label class="mb-2 block text-sm font-semibold text-slate-700">Updated Section</label>
+                <input type="text" name="section" class="field-input w-full rounded-2xl border px-4 py-3 text-sm outline-none transition focus:border-orange-500 focus:ring-4 focus:ring-orange-100" placeholder="{{ student.section or 'New section' }}">
+            </div>
+            <div>
+                <label class="mb-2 block text-sm font-semibold text-slate-700">New Profile Image</label>
+                <input type="file" name="profile_image" accept="image/*" class="w-full rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-600 outline-none transition focus:border-orange-500 focus:ring-4 focus:ring-orange-100">
+            </div>
+            <div class="md:col-span-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                <p class="text-xs text-slate-500">Leave fields empty if you do not want to change them. Only one pending request is allowed at a time.</p>
+                <button type="submit" class="btn-core btn-primary rounded-2xl px-4 py-3 text-sm">Send Update Request</button>
+            </div>
+        </form>
+        {% if latest_update_request and latest_update_request.admin_note %}
+        <p class="mt-3 text-sm text-slate-500">Admin note: {{ latest_update_request.admin_note }}</p>
+        {% endif %}
+    </section>
+
     <section class="grid gap-5 md:grid-cols-2 2xl:grid-cols-3">
         {% for book in books %}
-        <article class="glass-panel flex h-full flex-col rounded-[28px] border border-white/60 p-5 shadow-glow">
+        <article class="flex h-full flex-col rounded-[28px] border p-5 shadow-glow {% if book.available_copies > 0 %}glass-panel border-white/60{% else %}border-rose-200 bg-gradient-to-b from-rose-50 to-white{% endif %}">
             <div class="overflow-hidden rounded-[24px] border border-slate-200 bg-slate-100">
                 <img src="{{ url_for('static', filename=book.image_path) }}" alt="{{ book.title }}" class="h-64 w-full object-cover">
             </div>
@@ -81,14 +118,14 @@
                         <h3 class="font-display text-2xl font-bold text-ink">{{ book.title }}</h3>
                         <p class="mt-1 text-sm font-medium text-slate-600">{{ book.author }}</p>
                     </div>
-                    <span class="rounded-full bg-slate-100 px-3 py-1 font-mono text-xs text-slate-600">#{{ book.book_id }}</span>
+                    <span class="rounded-full bg-slate-100 px-3 py-1 font-mono text-xs text-slate-600">Book {{ ((books_pagination.page - 1) * books_pagination.per_page) + loop.index }}</span>
                 </div>
                 <div class="mt-4 flex flex-wrap gap-2 text-xs font-semibold">
                     <span class="rounded-full bg-orange-50 px-3 py-1 text-orange-700">{{ book.department }}</span>
                     <span class="rounded-full bg-sky-50 px-3 py-1 text-sky-700">{{ book.subject }}</span>
                 </div>
-                <div class="mt-4 rounded-2xl bg-slate-950 px-4 py-3 text-white">
-                    <p class="text-xs uppercase tracking-[0.2em] text-slate-300">Available Copies</p>
+                <div class="mt-4 rounded-2xl px-4 py-3 {% if book.available_copies > 0 %}bg-slate-950 text-white{% else %}bg-rose-100 text-rose-700{% endif %}">
+                    <p class="text-xs uppercase tracking-[0.2em] {% if book.available_copies > 0 %}text-slate-300{% else %}text-rose-500{% endif %}">Available Copies</p>
                     <p class="mt-2 text-2xl font-bold">{{ book.available_copies }}</p>
                 </div>
                 <div class="mt-5">
@@ -100,7 +137,7 @@
                         <button type="submit" class="btn-core btn-primary w-full rounded-2xl px-4 py-3 text-sm">Request Book</button>
                     </form>
                     {% else %}
-                    <div class="rounded-2xl bg-rose-50 px-4 py-3 text-center text-sm font-semibold text-rose-600">Currently unavailable</div>
+                    <div class="rounded-2xl bg-rose-600 px-4 py-3 text-center text-sm font-semibold text-white">Unavailable</div>
                     {% endif %}
                 </div>
             </div>

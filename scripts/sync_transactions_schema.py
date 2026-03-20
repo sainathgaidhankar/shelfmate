@@ -20,6 +20,7 @@ def main():
         columns = {column["name"] for column in inspector.get_columns("transactions")}
         student_columns = {column["name"] for column in inspector.get_columns("students")}
         book_columns = {column["name"] for column in inspector.get_columns("books")}
+        has_update_requests_table = inspector.has_table("student_update_requests")
 
         if "semester" not in student_columns:
             db.session.execute(
@@ -43,6 +44,28 @@ def main():
         if "cover_image" not in book_columns:
             db.session.execute(
                 text("ALTER TABLE books ADD COLUMN cover_image VARCHAR(255) NULL AFTER subject")
+            )
+
+        if not has_update_requests_table:
+            db.session.execute(
+                text(
+                    """
+                    CREATE TABLE student_update_requests (
+                        request_id INT AUTO_INCREMENT PRIMARY KEY,
+                        student_id INT NOT NULL,
+                        requested_contact VARCHAR(20) NULL,
+                        requested_section VARCHAR(10) NULL,
+                        requested_profile_image VARCHAR(255) NULL,
+                        status VARCHAR(20) NOT NULL DEFAULT 'pending',
+                        created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                        reviewed_at DATETIME NULL,
+                        admin_note VARCHAR(255) NULL,
+                        CONSTRAINT fk_student_update_requests_student
+                            FOREIGN KEY (student_id) REFERENCES students(student_id)
+                            ON DELETE CASCADE
+                    )
+                    """
+                )
             )
 
         if "due_date" not in columns:

@@ -1,5 +1,6 @@
 import csv
 from datetime import date
+from datetime import datetime
 from io import StringIO
 
 from flask import Blueprint, Response, abort, flash, redirect, render_template, request, url_for
@@ -9,7 +10,7 @@ from sqlalchemy.exc import IntegrityError
 
 from app.authz import admin_required
 from app.extensions import db
-from app.models import Book, Student, Transaction
+from app.models import Book, Student, StudentUpdateRequest, Transaction
 from app.services.barcode_service import generate_barcode
 from app.services.email_service import send_email
 from app.services.reminder_service import (
@@ -111,6 +112,11 @@ def dashboard():
     approved_students = approved_students_query.order_by(Student.usn.asc(), Student.name.asc()).all()
     student_departments = get_student_departments()
     student_summaries = []
+    profile_update_requests = (
+        StudentUpdateRequest.query.filter_by(status="pending")
+        .order_by(StudentUpdateRequest.request_id.desc())
+        .all()
+    )
     for student in approved_students:
         total_books = len(student.transactions)
         pending_books = sum(1 for txn in student.transactions if txn.status in {"requested", "issued", "return_requested"})
@@ -130,6 +136,7 @@ def dashboard():
         issue_requests=issue_requests,
         return_requests=return_requests,
         overdue_transactions=overdue_transactions,
+        profile_update_requests=profile_update_requests,
         approved_students=student_summaries,
         student_departments=student_departments,
         student_department=student_department,
@@ -230,6 +237,52 @@ def add_book():
     return render_template("add_book.html")
 
 
+@admin_bp.route("/books/<int:book_id>/edit", methods=["GET", "POST"])
+@login_required
+@admin_required
+def edit_book(book_id):
+    book = Book.query.get_or_404(book_id)
+
+    if request.method == "POST":
+        try:
+            total_copies = int(request.form["total_copies"])
+        except (TypeError, ValueError):
+            flash("Total copies must be a valid integer.", "danger")
+            return redirect(url_for("admin.edit_book", book_id=book.book_id))
+
+        if total_copies < 0:
+            flash("Total copies cannot be negative.", "danger")
+            return redirect(url_for("admin.edit_book", book_id=book.book_id))
+
+        if total_copies < book.issued_copies:
+            flash("Total copies cannot be lower than the number of currently issued books.", "warning")
+            return redirect(url_for("admin.edit_book", book_id=book.book_id))
+
+        try:
+            cover_image = save_uploaded_image(
+                request.files.get("cover_image"),
+                "BOOK_UPLOAD_FOLDER",
+                "book",
+            )
+        except ValueError as exc:
+            flash(str(exc), "danger")
+            return redirect(url_for("admin.edit_book", book_id=book.book_id))
+
+        book.title = request.form["title"]
+        book.author = request.form["author"]
+        book.department = request.form["department"]
+        book.subject = request.form["subject"]
+        book.total_copies = total_copies
+        if cover_image:
+            book.cover_image = cover_image
+
+        db.session.commit()
+        flash("Book details updated successfully.", "success")
+        return redirect(url_for("admin.view_books"))
+
+    return render_template("edit_book.html", book=book)
+
+
 @admin_bp.route("/view_books")
 @login_required
 @admin_required
@@ -272,6 +325,48 @@ def view_books():
         sort=sort,
         departments=departments,
     )
+
+
+@admin_bp.route("/approve_profile_update/<int:request_id>", methods=["POST"])
+@login_required
+@admin_required
+def approve_profile_update(request_id):
+    update_request = StudentUpdateRequest.query.get_or_404(request_id)
+    if update_request.status != "pending":
+        flash("This profile update request has already been reviewed.", "warning")
+        return redirect(url_for("admin.dashboard"))
+
+    student = update_request.student
+    if update_request.requested_contact:
+        student.contact = update_request.requested_contact
+    if update_request.requested_section:
+        student.section = update_request.requested_section
+    if update_request.requested_profile_image:
+        student.profile_image = update_request.requested_profile_image
+
+    update_request.status = "approved"
+    update_request.reviewed_at = datetime.utcnow()
+    update_request.admin_note = request.form.get("note", "").strip() or None
+    db.session.commit()
+    flash(f"Profile update approved for {student.name}.", "success")
+    return redirect(url_for("admin.dashboard"))
+
+
+@admin_bp.route("/reject_profile_update/<int:request_id>", methods=["POST"])
+@login_required
+@admin_required
+def reject_profile_update(request_id):
+    update_request = StudentUpdateRequest.query.get_or_404(request_id)
+    if update_request.status != "pending":
+        flash("This profile update request has already been reviewed.", "warning")
+        return redirect(url_for("admin.dashboard"))
+
+    update_request.status = "rejected"
+    update_request.reviewed_at = datetime.utcnow()
+    update_request.admin_note = request.form.get("reason", "").strip() or "Profile update request rejected."
+    db.session.commit()
+    flash(f"Profile update rejected for {update_request.student.name}.", "warning")
+    return redirect(url_for("admin.dashboard"))
 
 
 @admin_bp.route("/student_lookup")

@@ -1,17 +1,19 @@
 # ShelfMate
 
-ShelfMate is a Flask-based library management web application for colleges and departments. It supports student registration and approval, book issue and return workflows, barcode lookup, overdue reminders, reports, academic batch updates, and a responsive admin/student interface.
+ShelfMate is a Flask-based library management web application for colleges and departments. It supports student registration and approval, book issue and return workflows, barcode lookup, overdue reminders, reports, academic batch updates, approval-based student profile changes, and a responsive admin/student interface.
 
 ## Features
 
 - Student registration with approval flow
 - Admin dashboard for issue, return, approvals, and overdue tracking
-- Book catalog with search, filters, and direct issue
+- Book catalog with search, filters, direct issue, and admin edit controls
 - Barcode-based transaction lookup
 - Reminder emails for overdue books
 - Reports with CSV export
 - Bulk academic updates for semester promotion and completion
 - Optional student profile images and book cover images
+- Student profile update requests for contact, section, and profile image with admin approval
+- Unavailable book cards with separate visual state when copies reach zero
 - Railway-ready production setup
 
 ## Tech Stack
@@ -160,6 +162,8 @@ Create an admin user directly in the database or through your existing admin see
 
 - Student profile image upload is optional during registration
 - Book cover upload is optional while adding books
+- Students can later request profile image, contact, and section changes for admin approval
+- Admins can update book details and replace book cover images from the catalog
 - If no image is uploaded, ShelfMate uses default placeholder images
 - Uploaded files are stored inside:
   - `app/static/uploads/students/`
@@ -187,6 +191,9 @@ Create an admin user directly in the database or through your existing admin see
 - Register a student with and without image
 - Add a book with and without cover
 - Approve and reject student registrations
+- Submit and approve or reject a student profile update request
+- Edit a book and verify updated stock/image values
+- Set a book to zero available copies and verify the student card shows unavailable
 - Request, issue, and return a book
 - Test barcode lookup
 - Test overdue reminder emails
