@@ -6,6 +6,8 @@
 {% block shell_actions %}
 <a href="{{ url_for('admin.dashboard') }}" class="shell-link">Dashboard</a>
 <a href="{{ url_for('admin.student_lookup') }}" class="shell-link">Student Lookup</a>
+<a href="{{ url_for('admin.reports') }}" class="shell-link">Reports</a>
+<a href="{{ url_for('admin.academic_updates') }}" class="shell-link">Academic</a>
 <form method="POST" action="{{ url_for('auth.logout') }}">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <button type="submit" class="shell-danger">Logout</button>

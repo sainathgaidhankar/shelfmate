@@ -6,6 +6,8 @@
 {% block shell_actions %}
 <a href="{{ url_for('admin.scan_lookup') }}" class="shell-link">Back to Lookup</a>
 <a href="{{ url_for('admin.dashboard') }}" class="shell-link">Dashboard</a>
+<a href="{{ url_for('admin.reports') }}" class="shell-link">Reports</a>
+<a href="{{ url_for('admin.academic_updates') }}" class="shell-link">Academic</a>
 <form method="POST" action="{{ url_for('auth.logout') }}">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <button type="submit" class="shell-danger">Logout</button>
@@ -18,7 +20,11 @@
         <div class="glass-panel rounded-[32px] border border-white/60 p-6 shadow-glow sm:p-8">
             <p class="font-mono text-xs uppercase tracking-[0.3em] text-teal-700">Barcode Result</p>
             <h1 class="mt-3 font-display text-3xl font-bold text-ink">Transaction {{ txn.txn_id }}</h1>
-            <div class="mt-6 space-y-3 text-sm text-slate-700">
+            <div class="mt-6 grid gap-4 lg:grid-cols-[0.88fr_1.12fr]">
+                <div class="rounded-3xl border border-slate-200 bg-white/80 p-4">
+                    <img src="{{ url_for('static', filename=book.image_path) }}" alt="{{ book.title }}" class="h-56 w-full rounded-3xl object-cover">
+                </div>
+                <div class="space-y-3 text-sm text-slate-700">
                 <div><span class="font-semibold">Student:</span> {{ student.name }} ({{ student.usn }})</div>
                 <div><span class="font-semibold">Book:</span> {{ book.title }}</div>
                 <div><span class="font-semibold">Author:</span> {{ book.author }}</div>
@@ -27,6 +33,7 @@
                 <div><span class="font-semibold">Due Date:</span> {{ txn.due_date or '-' }}</div>
                 <div><span class="font-semibold">Returned At:</span> {{ txn.returned_at or '-' }}</div>
                 <div><span class="font-semibold">Barcode:</span> <span class="font-mono text-xs">{{ txn.barcode }}</span></div>
+                </div>
             </div>
             {% if txn.status in ["issued", "return_requested"] %}
             <form method="POST" action="{{ url_for('admin.confirm_return', txn_id=txn.txn_id) }}" class="mt-8">
@@ -40,6 +47,13 @@
             <h2 class="font-display text-2xl font-bold">Quick operator view</h2>
             <div class="mt-6 grid gap-4 sm:grid-cols-2">
                 <div class="rounded-2xl border border-white/10 bg-white/10 p-4">
+                    <div class="mb-4 flex items-center gap-3">
+                        <img src="{{ url_for('static', filename=student.image_path) }}" alt="{{ student.name }}" class="h-16 w-16 rounded-full border border-white/10 object-cover">
+                        <div>
+                            <p class="text-lg font-semibold">{{ student.name }}</p>
+                            <p class="text-sm text-slate-300">{{ student.usn }}</p>
+                        </div>
+                    </div>
                     <p class="text-xs uppercase tracking-[0.2em] text-slate-300">Student Contact</p>
                     <p class="mt-2 text-lg font-semibold">{{ student.contact }}</p>
                     <p class="text-sm text-slate-300">{{ student.email }}</p>
@@ -47,7 +61,7 @@
                 <div class="rounded-2xl border border-white/10 bg-white/10 p-4">
                     <p class="text-xs uppercase tracking-[0.2em] text-slate-300">Academic Details</p>
                     <p class="mt-2 text-lg font-semibold">{{ student.department }}</p>
-                    <p class="text-sm text-slate-300">{{ student.semester or '-' }} / {{ student.section }}</p>
+                <p class="text-sm text-slate-300">{{ student.academic_label }} / {{ student.section }}</p>
                 </div>
             </div>
         </div>

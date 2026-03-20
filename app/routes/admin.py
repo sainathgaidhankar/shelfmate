@@ -1,6 +1,8 @@
+import csv
 from datetime import date
+from io import StringIO
 
-from flask import Blueprint, abort, flash, redirect, render_template, request, url_for
+from flask import Blueprint, Response, abort, flash, redirect, render_template, request, url_for
 from flask_login import login_required
 from sqlalchemy import or_, select
 from sqlalchemy.exc import IntegrityError
@@ -15,10 +17,74 @@ from app.services.reminder_service import (
     send_overdue_reminder_for_transaction,
     send_overdue_reminders,
 )
+from app.services.upload_service import save_uploaded_image
 
 
 admin_bp = Blueprint("admin", __name__)
 SEMESTER_OPTIONS = ["1st", "2nd", "3rd", "4th", "5th", "6th", "7th", "8th"]
+
+
+def build_report_query(status="", department="", usn="", date_from=None, date_to=None):
+    report_query = (
+        Transaction.query.join(Student, Transaction.student_id == Student.student_id)
+        .join(Book, Transaction.book_id == Book.book_id)
+        .filter(Student.is_admin.is_(False))
+    )
+    if status:
+        if status == "overdue":
+            report_query = report_query.filter(
+                Transaction.status == "issued",
+                Transaction.due_date.is_not(None),
+                Transaction.due_date < date.today(),
+            )
+        else:
+            report_query = report_query.filter(Transaction.status == status)
+    if department:
+        report_query = report_query.filter(Student.department == department)
+    if usn:
+        report_query = report_query.filter(Student.usn.ilike(f"%{usn}%"))
+    if date_from:
+        report_query = report_query.filter(
+            (Transaction.issue_date.is_not(None) & (Transaction.issue_date >= date_from))
+            | (Transaction.due_date.is_not(None) & (Transaction.due_date >= date_from))
+            | (Transaction.returned_at.is_not(None) & (Transaction.returned_at >= date_from))
+        )
+    if date_to:
+        report_query = report_query.filter(
+            (Transaction.issue_date.is_not(None) & (Transaction.issue_date <= date_to))
+            | (Transaction.due_date.is_not(None) & (Transaction.due_date <= date_to))
+            | (Transaction.returned_at.is_not(None) & (Transaction.returned_at <= date_to))
+        )
+    return report_query
+
+
+def get_student_departments():
+    return [
+        row[0]
+        for row in db.session.query(Student.department)
+        .filter(Student.approved.is_(True), Student.is_admin.is_(False))
+        .distinct()
+        .order_by(Student.department)
+        .all()
+    ]
+
+
+def get_student_sections():
+    return [
+        row[0]
+        for row in db.session.query(Student.section)
+        .filter(Student.approved.is_(True), Student.is_admin.is_(False))
+        .distinct()
+        .order_by(Student.section)
+        .all()
+        if row[0]
+    ]
+
+
+def format_export_date(value):
+    if not value:
+        return ""
+    return value.strftime("%d-%m-%y")
 
 
 @admin_bp.route("/admin_dashboard")
@@ -43,14 +109,7 @@ def dashboard():
     if student_department:
         approved_students_query = approved_students_query.filter(Student.department == student_department)
     approved_students = approved_students_query.order_by(Student.usn.asc(), Student.name.asc()).all()
-    student_departments = [
-        row[0]
-        for row in db.session.query(Student.department)
-        .filter(Student.approved.is_(True), Student.is_admin.is_(False))
-        .distinct()
-        .order_by(Student.department)
-        .all()
-    ]
+    student_departments = get_student_departments()
     student_summaries = []
     for student in approved_students:
         total_books = len(student.transactions)
@@ -138,12 +197,23 @@ def add_book():
             flash("Total copies must be a positive integer.", "danger")
             return redirect(url_for("admin.add_book"))
 
+        try:
+            cover_image = save_uploaded_image(
+                request.files.get("cover_image"),
+                "BOOK_UPLOAD_FOLDER",
+                "book",
+            )
+        except ValueError as exc:
+            flash(str(exc), "danger")
+            return redirect(url_for("admin.add_book"))
+
         new_book = Book(
             book_id=request.form["book_id"],
             title=request.form["title"],
             author=request.form["author"],
             department=request.form["department"],
             subject=request.form["subject"],
+            cover_image=cover_image,
             total_copies=total_copies,
             issued_copies=0,
         )
@@ -269,14 +339,7 @@ def student_lookup():
             .all()
         )
 
-    departments = [
-        row[0]
-        for row in db.session.query(Student.department)
-        .filter(Student.approved.is_(True), Student.is_admin.is_(False))
-        .distinct()
-        .order_by(Student.department)
-        .all()
-    ]
+    departments = get_student_departments()
     return render_template(
         "admin_student_lookup.html",
         department=department,
@@ -290,6 +353,142 @@ def student_lookup():
         active_transactions=active_transactions,
         student_transactions=student_transactions,
         available_books=available_books,
+    )
+
+
+@admin_bp.route("/academic_updates", methods=["GET", "POST"])
+@login_required
+@admin_required
+def academic_updates():
+    department = request.values.get("department", default="", type=str).strip()
+    section = request.values.get("section", default="", type=str).strip()
+    current_semester = request.values.get("current_semester", default="", type=str).strip()
+    academic_status = request.values.get("academic_status", default="active", type=str).strip() or "active"
+    target_semester = request.values.get("target_semester", default="", type=str).strip()
+    completion_year = request.values.get("completion_year", default="", type=str).strip()
+
+    student_query = Student.query.filter_by(approved=True, is_admin=False).filter(Student.academic_status == academic_status)
+    if department:
+        student_query = student_query.filter(Student.department == department)
+    if section:
+        student_query = student_query.filter(Student.section == section)
+    if current_semester:
+        student_query = student_query.filter(Student.semester == current_semester)
+
+    matched_students = student_query.order_by(Student.usn.asc(), Student.name.asc()).all()
+
+    if request.method == "POST":
+        if not matched_students:
+            flash("No approved students matched the selected academic filters.", "warning")
+            return redirect(
+                url_for(
+                    "admin.academic_updates",
+                    department=department,
+                    section=section,
+                    current_semester=current_semester,
+                    academic_status=academic_status,
+                )
+            )
+        action = request.form.get("action", "").strip()
+        if action == "promote":
+            if not target_semester:
+                flash("Choose the semester you want to assign before applying the promotion.", "warning")
+                return redirect(
+                    url_for(
+                        "admin.academic_updates",
+                        department=department,
+                        section=section,
+                        current_semester=current_semester,
+                        academic_status=academic_status,
+                    )
+                )
+            if current_semester and current_semester == target_semester:
+                flash("Current semester and target semester cannot be the same.", "warning")
+                return redirect(
+                    url_for(
+                        "admin.academic_updates",
+                        department=department,
+                        section=section,
+                        current_semester=current_semester,
+                        academic_status=academic_status,
+                    )
+                )
+            for student in matched_students:
+                student.semester = target_semester
+                student.academic_status = "active"
+                student.completion_year = None
+            db.session.commit()
+            flash(f"Updated {len(matched_students)} student record(s) to semester {target_semester}.", "success")
+            return redirect(
+                url_for(
+                    "admin.academic_updates",
+                    department=department,
+                    section=section,
+                    current_semester=target_semester,
+                    academic_status="active",
+                )
+            )
+        if action == "complete":
+            if current_semester != "8th":
+                flash("Only 8th semester batches should be marked as completed.", "warning")
+                return redirect(
+                    url_for(
+                        "admin.academic_updates",
+                        department=department,
+                        section=section,
+                        current_semester=current_semester,
+                        academic_status=academic_status,
+                    )
+                )
+            try:
+                completion_year_value = int(completion_year)
+            except (TypeError, ValueError):
+                flash("Enter a valid completion year before marking students as completed.", "warning")
+                return redirect(
+                    url_for(
+                        "admin.academic_updates",
+                        department=department,
+                        section=section,
+                        current_semester=current_semester,
+                        academic_status=academic_status,
+                    )
+                )
+            for student in matched_students:
+                student.academic_status = "completed"
+                student.completion_year = completion_year_value
+            db.session.commit()
+            flash(f"Marked {len(matched_students)} student record(s) as completed in {completion_year_value}.", "success")
+            return redirect(
+                url_for(
+                    "admin.academic_updates",
+                    department=department,
+                    section=section,
+                    academic_status="completed",
+                )
+            )
+        flash("Choose a valid academic update action.", "warning")
+        return redirect(
+            url_for(
+                "admin.academic_updates",
+                department=department,
+                section=section,
+                current_semester=current_semester,
+                academic_status=academic_status,
+            )
+        )
+
+    return render_template(
+        "academic_updates.html",
+        departments=get_student_departments(),
+        sections=get_student_sections(),
+        semester_options=SEMESTER_OPTIONS,
+        department=department,
+        section=section,
+        current_semester=current_semester,
+        academic_status=academic_status,
+        target_semester=target_semester,
+        completion_year=completion_year,
+        matched_students=matched_students,
     )
 
 
@@ -510,6 +709,107 @@ def view_transactions():
     if not txns:
         flash("No transactions found.", "info")
     return render_template("view_transactions.html", txns=txns)
+
+
+@admin_bp.route("/reports")
+@login_required
+@admin_required
+def reports():
+    status = request.args.get("status", default="", type=str).strip()
+    department = request.args.get("department", default="", type=str).strip()
+    usn = request.args.get("usn", default="", type=str).strip()
+    date_from = request.args.get("date_from", default=None, type=date.fromisoformat)
+    date_to = request.args.get("date_to", default=None, type=date.fromisoformat)
+
+    report_query = build_report_query(status=status, department=department, usn=usn, date_from=date_from, date_to=date_to)
+    transactions = report_query.order_by(Transaction.txn_id.desc()).all()
+    departments = get_student_departments()
+    summary = {
+        "total": len(transactions),
+        "issued": sum(1 for txn in transactions if txn.status == "issued"),
+        "overdue": sum(1 for txn in transactions if txn.is_overdue),
+        "returned": sum(1 for txn in transactions if txn.status == "returned"),
+        "requested": sum(1 for txn in transactions if txn.status == "requested"),
+    }
+    return render_template(
+        "reports.html",
+        transactions=transactions,
+        departments=departments,
+        status=status,
+        department=department,
+        usn=usn,
+        date_from=date_from.isoformat() if date_from else "",
+        date_to=date_to.isoformat() if date_to else "",
+        summary=summary,
+    )
+
+
+@admin_bp.route("/reports/export")
+@login_required
+@admin_required
+def export_reports():
+    status = request.args.get("status", default="", type=str).strip()
+    department = request.args.get("department", default="", type=str).strip()
+    usn = request.args.get("usn", default="", type=str).strip()
+    date_from = request.args.get("date_from", default=None, type=date.fromisoformat)
+    date_to = request.args.get("date_to", default=None, type=date.fromisoformat)
+
+    transactions = (
+        build_report_query(status=status, department=department, usn=usn, date_from=date_from, date_to=date_to)
+        .order_by(Transaction.txn_id.desc())
+        .all()
+    )
+
+    buffer = StringIO()
+    writer = csv.writer(buffer)
+    writer.writerow(
+        [
+            "Transaction ID",
+            "Status",
+            "Student Name",
+            "USN",
+            "Department",
+            "Academic",
+            "Book ID",
+            "Book Title",
+            "Author",
+            "Issued On",
+            "Due On",
+            "Returned On",
+            "Barcode",
+            "Overdue",
+            "Reminder Sent",
+            "Admin Note",
+        ]
+    )
+    for txn in transactions:
+        writer.writerow(
+            [
+                txn.txn_id,
+                txn.status,
+                txn.student.name,
+                txn.student.usn,
+                txn.student.department,
+                txn.student.academic_label,
+                txn.book.book_id,
+                txn.book.title,
+                txn.book.author,
+                format_export_date(txn.issue_date),
+                format_export_date(txn.due_date),
+                format_export_date(txn.returned_at),
+                txn.barcode or "",
+                "Yes" if txn.is_overdue else "No",
+                format_export_date(txn.reminder_sent_at),
+                txn.admin_note or "",
+            ]
+        )
+
+    filename = f"shelfmate-report-{date.today().isoformat()}.csv"
+    return Response(
+        buffer.getvalue(),
+        mimetype="text/csv",
+        headers={"Content-Disposition": f"attachment; filename={filename}"},
+    )
 
 
 @admin_bp.route("/scan_lookup", methods=["GET", "POST"])

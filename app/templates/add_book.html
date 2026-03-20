@@ -19,7 +19,7 @@
             <p class="font-mono text-xs uppercase tracking-[0.3em] text-teal-700">Catalog</p>
             <h1 class="mt-3 font-display text-3xl font-bold text-ink sm:text-4xl">Add a new book</h1>
         </div>
-        <form method="POST" action="{{ url_for('admin.add_book') }}" class="grid gap-5 sm:grid-cols-2">
+        <form method="POST" action="{{ url_for('admin.add_book') }}" enctype="multipart/form-data" class="grid gap-5 sm:grid-cols-2">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <div>
                 <label class="mb-2 block text-sm font-semibold text-slate-700">Book ID</label>
@@ -44,6 +44,11 @@
             <div>
                 <label class="mb-2 block text-sm font-semibold text-slate-700">Total Copies</label>
                 <input type="number" name="total_copies" required class="w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none transition focus:border-teal-500 focus:ring-4 focus:ring-teal-100" placeholder="Total Copies">
+            </div>
+            <div class="sm:col-span-2">
+                <label class="mb-2 block text-sm font-semibold text-slate-700">Book Cover</label>
+                <input type="file" name="cover_image" accept="image/*" class="w-full rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-600 outline-none transition focus:border-teal-500 focus:ring-4 focus:ring-teal-100">
+                <p class="mt-2 text-xs text-slate-500">Optional. If you skip this, ShelfMate will use the default book cover.</p>
             </div>
             <div class="sm:col-span-2">
 <button type="submit" class="btn-core btn-primary w-full rounded-2xl px-4 py-3 text-sm">Add Book</button>

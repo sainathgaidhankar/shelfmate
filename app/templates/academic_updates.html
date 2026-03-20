@@ -1,0 +1,142 @@
+{% extends "base.html" %}
+
+{% block title %}Academic Updates | ShelfMate{% endblock %}
+{% block shell_subtitle %}Promote or reassign semester values in bulk for matched student groups instead of editing records one by one.{% endblock %}
+
+{% block shell_actions %}
+<a href="{{ url_for('admin.dashboard') }}" class="shell-link">Dashboard</a>
+<a href="{{ url_for('admin.student_lookup') }}" class="shell-link">Student Lookup</a>
+<a href="{{ url_for('admin.reports') }}" class="shell-link">Reports</a>
+<form method="POST" action="{{ url_for('auth.logout') }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <button type="submit" class="shell-danger">Logout</button>
+</form>
+{% endblock %}
+
+{% block content %}
+<div class="space-y-7">
+    <section class="glass-panel rounded-[32px] border p-6 shadow-glow sm:p-8">
+        <div class="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+            <div>
+                <p class="section-label text-xs text-orange-600">Academic Cycle</p>
+                <h1 class="surface-title mt-3 font-display text-4xl font-bold">Bulk semester updates</h1>
+                <p class="surface-copy mt-3 max-w-2xl text-sm">Match approved students by department, section, and current semester. Then promote the full batch or mark 8th-semester students as completed with the correct passing year.</p>
+            </div>
+        </div>
+
+        <form method="GET" action="{{ url_for('admin.academic_updates') }}" class="mt-8 grid gap-3 md:grid-cols-5">
+            <select name="academic_status" class="field-select rounded-2xl border px-4 py-3 text-sm outline-none transition focus:border-orange-500 focus:ring-4 focus:ring-orange-100">
+                <option value="active" {% if academic_status == 'active' %}selected{% endif %}>Active Students</option>
+                <option value="completed" {% if academic_status == 'completed' %}selected{% endif %}>Completed Students</option>
+            </select>
+            <select name="department" class="field-select rounded-2xl border px-4 py-3 text-sm outline-none transition focus:border-orange-500 focus:ring-4 focus:ring-orange-100">
+                <option value="">All Departments</option>
+                {% for dept in departments %}
+                <option value="{{ dept }}" {% if department == dept %}selected{% endif %}>{{ dept }}</option>
+                {% endfor %}
+            </select>
+            <select name="section" class="field-select rounded-2xl border px-4 py-3 text-sm outline-none transition focus:border-orange-500 focus:ring-4 focus:ring-orange-100">
+                <option value="">All Sections</option>
+                {% for item in sections %}
+                <option value="{{ item }}" {% if section == item %}selected{% endif %}>{{ item }}</option>
+                {% endfor %}
+            </select>
+            <select name="current_semester" class="field-select rounded-2xl border px-4 py-3 text-sm outline-none transition focus:border-orange-500 focus:ring-4 focus:ring-orange-100">
+                <option value="">All Current Semesters</option>
+                {% for item in semester_options %}
+                <option value="{{ item }}" {% if current_semester == item %}selected{% endif %}>{{ item }}</option>
+                {% endfor %}
+            </select>
+            <button type="submit" class="btn-core btn-primary rounded-2xl px-5 py-3 text-sm">Filter Students</button>
+        </form>
+    </section>
+
+    <section class="grid gap-6 xl:grid-cols-[0.9fr_1.1fr]">
+        <div class="dark-stat rounded-[32px] p-6">
+            <p class="stat-label">Matched Students</p>
+            <p class="mt-3 font-display text-5xl font-bold">{{ matched_students|length }}</p>
+            <p class="mt-4 text-sm text-slate-200">The current filter set defines the group that will be updated. Review the list before applying changes.</p>
+        </div>
+
+        <div class="glass-panel rounded-[32px] border p-6 shadow-glow sm:p-8">
+            <h2 class="surface-title font-display text-2xl font-bold">Academic actions</h2>
+            <p class="surface-copy mt-2 text-sm">Promote active batches to the next semester or mark 8th-semester students as completed without editing individual records.</p>
+            <form method="POST" action="{{ url_for('admin.academic_updates') }}" class="mt-6 grid gap-6">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="academic_status" value="{{ academic_status }}">
+                <input type="hidden" name="department" value="{{ department }}">
+                <input type="hidden" name="section" value="{{ section }}">
+                <input type="hidden" name="current_semester" value="{{ current_semester }}">
+                <div class="grid gap-6 lg:grid-cols-2">
+                    <div class="rounded-[28px] border border-slate-200/70 bg-white/70 p-5">
+                        <p class="section-label text-[11px] text-orange-600">Promote Batch</p>
+                        <h3 class="surface-title mt-3 font-display text-2xl font-bold">Move to next semester</h3>
+                        <p class="surface-copy mt-2 text-sm">Use this for active students who are progressing from one semester to the next.</p>
+                        <div class="mt-5">
+                            <label class="field-label mb-2 block text-sm font-semibold">Target Semester</label>
+                            <select name="target_semester" class="field-select w-full rounded-2xl border px-4 py-3 text-sm outline-none transition focus:border-orange-500 focus:ring-4 focus:ring-orange-100">
+                                <option value="">Choose target semester</option>
+                                {% for item in semester_options %}
+                                <option value="{{ item }}" {% if target_semester == item %}selected{% endif %}>{{ item }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <button type="submit" name="action" value="promote" class="btn-core btn-primary mt-5 w-full rounded-2xl px-5 py-3 text-sm">Promote Matched Students</button>
+                    </div>
+
+                    <div class="rounded-[28px] border border-slate-200/70 bg-white/70 p-5">
+                        <p class="section-label text-[11px] text-teal-600">Complete Batch</p>
+                        <h3 class="surface-title mt-3 font-display text-2xl font-bold">Mark as completed</h3>
+                        <p class="surface-copy mt-2 text-sm">Use this when 8th-semester students finish academics. The semester label will change to their completion year.</p>
+                        <div class="mt-5">
+                            <label class="field-label mb-2 block text-sm font-semibold">Completion Year</label>
+                            <input type="number" name="completion_year" min="2000" max="2100" value="{{ completion_year }}" class="field-input w-full rounded-2xl border px-4 py-3 text-sm outline-none transition focus:border-orange-500 focus:ring-4 focus:ring-orange-100" placeholder="2026">
+                        </div>
+                        <button type="submit" name="action" value="complete" class="btn-core mt-5 w-full rounded-2xl border border-emerald-200 bg-emerald-50 px-5 py-3 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-100">Mark Batch As Completed</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </section>
+
+    <div class="table-shell">
+        <div class="border-b border-slate-100 px-6 py-5">
+            <h2 class="surface-title font-display text-2xl font-bold">Matched student records</h2>
+        </div>
+        <div class="table-scroll">
+            <table class="w-full min-w-full text-left text-sm">
+                <thead class="bg-slate-950 text-white">
+                    <tr>
+                        <th class="px-4 py-4 font-semibold">USN</th>
+                        <th class="px-4 py-4 font-semibold">Name</th>
+                        <th class="px-4 py-4 font-semibold">Department</th>
+                        <th class="px-4 py-4 font-semibold">Section</th>
+                        <th class="px-4 py-4 font-semibold">Academic Status</th>
+                        <th class="px-4 py-4 font-semibold">Semester / Completion</th>
+                        <th class="px-4 py-4 font-semibold">Contact</th>
+                        <th class="px-4 py-4 font-semibold">Email</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 text-slate-700">
+                    {% for student in matched_students %}
+                    <tr>
+                        <td class="px-4 py-4 font-mono text-xs">{{ student.usn }}</td>
+                        <td class="px-4 py-4 font-medium">{{ student.name }}</td>
+                        <td class="px-4 py-4">{{ student.department }}</td>
+                        <td class="px-4 py-4">{{ student.section or '-' }}</td>
+                        <td class="px-4 py-4">{{ student.academic_status|title }}</td>
+                        <td class="px-4 py-4">{{ student.academic_label }}</td>
+                        <td class="px-4 py-4">{{ student.contact }}</td>
+                        <td class="px-4 py-4">{{ student.email }}</td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="8" class="px-4 py-10 text-center text-slate-500">No approved students matched the current academic filters.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

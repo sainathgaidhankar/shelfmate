@@ -37,7 +37,7 @@
 - [x] Add an overdue students dashboard card/table with name, USN, contact, and pending books
 - [x] Add overdue email reminder sending for students whose due date has passed
 - [x] Decide reminder trigger strategy: automatic scheduled job plus manual "send reminders now" action
-- [ ] Improve admin dashboard UI into a cleaner operations layout with dedicated sections for lookup, approvals, requests, and overdue follow-up
+- [x] Improve admin dashboard UI into a cleaner operations layout with dedicated sections for lookup, approvals, requests, and overdue follow-up
 
 ## Recommended Build Order
 
@@ -46,3 +46,11 @@
 - [x] Step 3: Manual issue-book action from the student detail page
 - [x] Step 4: Overdue students table on admin dashboard
 - [x] Step 5: Email reminder sending for overdue students
+
+## Phase 4: Reporting And Hardening
+
+- [x] Add an admin reports screen with filters for status, department, USN, and date range
+- [x] Add CSV export for filtered circulation reports
+- [x] Add an academic-cycle admin workflow for bulk semester updates by department/section/current semester
+- [ ] Configure Railway scheduled job for automatic overdue reminders
+- [x] Add a final deployment hardening / post-deploy checklist

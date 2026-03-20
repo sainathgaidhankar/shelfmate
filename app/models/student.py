@@ -12,6 +12,9 @@ class Student(UserMixin, db.Model):
     department = db.Column(db.String(50))
     section = db.Column(db.String(10))
     semester = db.Column(db.String(20))
+    academic_status = db.Column(db.String(20), default="active")
+    completion_year = db.Column(db.Integer)
+    profile_image = db.Column(db.String(255))
     contact = db.Column(db.String(20))
     email = db.Column(db.String(100), unique=True)
     password = db.Column(db.String(200))
@@ -19,6 +22,16 @@ class Student(UserMixin, db.Model):
     is_admin = db.Column(db.Boolean, default=False)
 
     transactions = db.relationship("Transaction", back_populates="student")
+
+    @property
+    def academic_label(self):
+        if self.academic_status == "completed":
+            return f"Completed {self.completion_year}" if self.completion_year else "Completed"
+        return self.semester or "-"
+
+    @property
+    def image_path(self):
+        return self.profile_image or "images/default-student.svg"
 
     def get_id(self):
         return str(self.student_id)

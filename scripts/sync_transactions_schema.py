@@ -19,10 +19,30 @@ def main():
         inspector = inspect(db.engine)
         columns = {column["name"] for column in inspector.get_columns("transactions")}
         student_columns = {column["name"] for column in inspector.get_columns("students")}
+        book_columns = {column["name"] for column in inspector.get_columns("books")}
 
         if "semester" not in student_columns:
             db.session.execute(
                 text("ALTER TABLE students ADD COLUMN semester VARCHAR(20) NULL AFTER section")
+            )
+        if "academic_status" not in student_columns:
+            db.session.execute(
+                text("ALTER TABLE students ADD COLUMN academic_status VARCHAR(20) NULL DEFAULT 'active' AFTER semester")
+            )
+            db.session.execute(
+                text("UPDATE students SET academic_status = 'active' WHERE academic_status IS NULL")
+            )
+        if "completion_year" not in student_columns:
+            db.session.execute(
+                text("ALTER TABLE students ADD COLUMN completion_year INT NULL AFTER academic_status")
+            )
+        if "profile_image" not in student_columns:
+            db.session.execute(
+                text("ALTER TABLE students ADD COLUMN profile_image VARCHAR(255) NULL AFTER completion_year")
+            )
+        if "cover_image" not in book_columns:
+            db.session.execute(
+                text("ALTER TABLE books ADD COLUMN cover_image VARCHAR(255) NULL AFTER subject")
             )
 
         if "due_date" not in columns:

@@ -9,6 +9,7 @@ class Book(db.Model):
     author = db.Column(db.String(100))
     department = db.Column(db.String(50))
     subject = db.Column(db.String(50))
+    cover_image = db.Column(db.String(255))
     total_copies = db.Column(db.Integer)
     issued_copies = db.Column(db.Integer, default=0)
 
@@ -19,3 +20,7 @@ class Book(db.Model):
         total = int(getattr(self, "total_copies", 0) or 0)
         issued = int(getattr(self, "issued_copies", 0) or 0)
         return max(0, total - issued)
+
+    @property
+    def image_path(self):
+        return self.cover_image or "images/default-book.svg"

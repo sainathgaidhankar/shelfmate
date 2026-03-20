@@ -27,6 +27,10 @@ class Config:
     MAIL_DEFAULT_SENDER = os.getenv("MAIL_DEFAULT_SENDER")
     ENABLE_MAILER = os.getenv("ENABLE_MAILER") == "True"
     SMTP_TIMEOUT = int(os.getenv("SMTP_TIMEOUT", "10"))
+    MAX_CONTENT_LENGTH = int(os.getenv("MAX_CONTENT_LENGTH", str(4 * 1024 * 1024)))
+    ALLOWED_IMAGE_EXTENSIONS = {"png", "jpg", "jpeg", "gif", "webp", "svg"}
+    STUDENT_UPLOAD_FOLDER = "uploads/students"
+    BOOK_UPLOAD_FOLDER = "uploads/books"
 
     @classmethod
     def validate(cls):

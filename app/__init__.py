@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from flask import Flask
 
 from app.error_handlers import register_error_handlers
@@ -15,6 +17,9 @@ def create_app(config_class=None):
     app = Flask(__name__, template_folder="templates", static_folder="static")
     app.config.from_object(config_class)
     config_class.validate()
+
+    Path(app.static_folder, app.config["STUDENT_UPLOAD_FOLDER"]).mkdir(parents=True, exist_ok=True)
+    Path(app.static_folder, app.config["BOOK_UPLOAD_FOLDER"]).mkdir(parents=True, exist_ok=True)
 
     db.init_app(app)
     csrf.init_app(app)

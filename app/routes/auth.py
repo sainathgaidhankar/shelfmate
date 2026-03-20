@@ -5,6 +5,7 @@ from werkzeug.security import check_password_hash, generate_password_hash
 
 from app.extensions import db
 from app.models import Student
+from app.services.upload_service import save_uploaded_image
 
 
 auth_bp = Blueprint("auth", __name__)
@@ -18,12 +19,25 @@ def register():
             flash("Email already registered. Please login instead.", "danger")
             return redirect(url_for("auth.login"))
 
+        try:
+            profile_image = save_uploaded_image(
+                request.files.get("profile_image"),
+                "STUDENT_UPLOAD_FOLDER",
+                "student",
+            )
+        except ValueError as exc:
+            flash(str(exc), "danger")
+            return redirect(url_for("auth.register"))
+
         new_student = Student(
             name=request.form["name"],
             usn=request.form["usn"],
             department=request.form["department"],
             section=request.form["section"],
             semester=request.form["semester"],
+            academic_status="active",
+            completion_year=None,
+            profile_image=profile_image,
             contact=request.form["contact"],
             email=request.form["email"],
             password=generate_password_hash(request.form["password"]),
