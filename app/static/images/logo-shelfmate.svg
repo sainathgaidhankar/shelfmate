@@ -20,7 +20,9 @@
   <rect x="132" y="68" width="56" height="154" rx="18" fill="#f8fafc"/>
   <rect x="194" y="102" width="58" height="120" rx="18" fill="url(#shelfmate-teal)"/>
   <circle cx="222" cy="114" r="10" fill="#f8fafc" opacity="0.92"/>
-  <path d="M160 120c0-9 7-16 16-16h28c9 0 16 7 16 16v48c0 9-7 16-16 16h-28c-9 0-16-7-16-16z" fill="#0f172a" opacity="0.14"/>
+  <path d="M146 92h28" stroke="#e2e8f0" stroke-width="8" stroke-linecap="round" opacity="0.95"/>
+  <path d="M146 118h28" stroke="#cbd5e1" stroke-width="8" stroke-linecap="round" opacity="0.75"/>
+  <path d="M146 144h28" stroke="#cbd5e1" stroke-width="8" stroke-linecap="round" opacity="0.75"/>
   <path d="M83 118h28" stroke="#fff7ed" stroke-width="7" stroke-linecap="round" opacity="0.85"/>
   <path d="M83 140h28" stroke="#fff7ed" stroke-width="7" stroke-linecap="round" opacity="0.55"/>
   <path d="M208 156h30" stroke="#ecfeff" stroke-width="7" stroke-linecap="round" opacity="0.85"/>
