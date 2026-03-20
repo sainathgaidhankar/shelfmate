@@ -92,7 +92,6 @@ def format_export_date(value):
 @login_required
 @admin_required
 def dashboard():
-    student_department = request.args.get("student_department", default="", type=str).strip()
     books = Book.query.order_by(Book.title.asc()).all()
     students = Student.query.filter_by(approved=False).order_by(Student.usn.asc(), Student.student_id.asc()).all()
     issue_requests = (
@@ -106,29 +105,11 @@ def dashboard():
         .all()
     )
     overdue_transactions = get_overdue_transactions(include_already_reminded=True)
-    approved_students_query = Student.query.filter_by(approved=True, is_admin=False)
-    if student_department:
-        approved_students_query = approved_students_query.filter(Student.department == student_department)
-    approved_students = approved_students_query.order_by(Student.usn.asc(), Student.name.asc()).all()
-    student_departments = get_student_departments()
-    student_summaries = []
     profile_update_requests = (
         StudentUpdateRequest.query.filter_by(status="pending")
         .order_by(StudentUpdateRequest.request_id.desc())
         .all()
     )
-    for student in approved_students:
-        total_books = len(student.transactions)
-        pending_books = sum(1 for txn in student.transactions if txn.status in {"requested", "issued", "return_requested"})
-        returned_books = sum(1 for txn in student.transactions if txn.status == "returned")
-        student_summaries.append(
-            {
-                "student": student,
-                "total_books": total_books,
-                "pending_books": pending_books,
-                "returned_books": returned_books,
-            }
-        )
     return render_template(
         "admin_dashboard.html",
         books=books,
@@ -137,9 +118,6 @@ def dashboard():
         return_requests=return_requests,
         overdue_transactions=overdue_transactions,
         profile_update_requests=profile_update_requests,
-        approved_students=student_summaries,
-        student_departments=student_departments,
-        student_department=student_department,
         today=date.today(),
     )
 
