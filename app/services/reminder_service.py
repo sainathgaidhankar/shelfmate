@@ -19,7 +19,7 @@ def get_overdue_transactions(include_already_reminded=False):
 
 
 def send_overdue_reminder_for_transaction(txn):
-    send_email(
+    sent = send_email(
         txn.student.email,
         "ShelfMate Overdue Book Reminder",
         (
@@ -28,15 +28,16 @@ def send_overdue_reminder_for_transaction(txn):
             f"\n\nShelfMate Library"
         ),
     )
-    txn.reminder_sent_at = date.today()
-    return txn
+    if sent:
+        txn.reminder_sent_at = date.today()
+    return sent
 
 
 def send_overdue_reminders(transactions):
     sent_count = 0
     for txn in transactions:
-        send_overdue_reminder_for_transaction(txn)
-        sent_count += 1
+        if send_overdue_reminder_for_transaction(txn):
+            sent_count += 1
     if sent_count:
         db.session.commit()
     return sent_count

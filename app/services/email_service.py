@@ -7,7 +7,8 @@ from flask import current_app
 
 def send_email(to_email, subject, body):
     if not current_app.config.get("ENABLE_MAILER"):
-        return
+        current_app.logger.warning("Email skipped because mailer is disabled: %s", subject)
+        return False
 
     try:
         message = MIMEMultipart()
@@ -45,5 +46,7 @@ def send_email(to_email, subject, body):
             message.as_string(),
         )
         server.quit()
+        return True
     except Exception:
-        current_app.logger.exception("Error sending email")
+        current_app.logger.exception("Error sending email to %s with subject %s", to_email, subject)
+        return False

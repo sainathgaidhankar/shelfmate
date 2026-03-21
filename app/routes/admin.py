@@ -131,8 +131,7 @@ def approve_student(student_id):
         student.approved = True
         student.is_admin = bool(student.is_admin)
         db.session.commit()
-        flash("Student approved successfully.", "success")
-        send_email(
+        email_sent = send_email(
             student.email,
             "ShelfMate Registration Approved",
             (
@@ -140,6 +139,10 @@ def approve_student(student_id):
                 "You can now log in.\n\nShelfMate Library"
             ),
         )
+        if email_sent:
+            flash("Student approved successfully. Approval email sent.", "success")
+        else:
+            flash("Student approved successfully, but the approval email could not be sent.", "warning")
 
     return redirect(url_for("admin.dashboard"))
 
@@ -155,8 +158,7 @@ def reject_student(student_id):
     reason = request.form.get("reason", "").strip() or "Registration details did not meet verification requirements."
     db.session.delete(student)
     db.session.commit()
-    flash("Student registration rejected.", "warning")
-    send_email(
+    email_sent = send_email(
         student.email,
         "ShelfMate Registration Update",
         (
@@ -164,6 +166,10 @@ def reject_student(student_id):
             f"Reason: {reason}\n\nShelfMate Library"
         ),
     )
+    if email_sent:
+        flash("Student registration rejected. Rejection email sent.", "warning")
+    else:
+        flash("Student registration rejected, but the rejection email could not be sent.", "warning")
     return redirect(url_for("admin.dashboard"))
 
 
@@ -326,7 +332,18 @@ def approve_profile_update(request_id):
     update_request.reviewed_at = datetime.utcnow()
     update_request.admin_note = request.form.get("note", "").strip() or None
     db.session.commit()
-    flash(f"Profile update approved for {student.name}.", "success")
+    email_sent = send_email(
+        student.email,
+        "ShelfMate Profile Update Approved",
+        (
+            f"Hello {student.name},\n\nYour profile update request has been approved."
+            "\nYour updated details are now active in ShelfMate.\n\nShelfMate Library"
+        ),
+    )
+    if email_sent:
+        flash(f"Profile update approved for {student.name}. Email sent.", "success")
+    else:
+        flash(f"Profile update approved for {student.name}, but the email could not be sent.", "warning")
     return redirect(url_for("admin.dashboard"))
 
 
@@ -343,7 +360,21 @@ def reject_profile_update(request_id):
     update_request.reviewed_at = datetime.utcnow()
     update_request.admin_note = request.form.get("reason", "").strip() or "Profile update request rejected."
     db.session.commit()
-    flash(f"Profile update rejected for {update_request.student.name}.", "warning")
+    email_sent = send_email(
+        update_request.student.email,
+        "ShelfMate Profile Update Rejected",
+        (
+            f"Hello {update_request.student.name},\n\nYour profile update request was not approved.\n"
+            f"Reason: {update_request.admin_note}\n\nShelfMate Library"
+        ),
+    )
+    if email_sent:
+        flash(f"Profile update rejected for {update_request.student.name}. Email sent.", "warning")
+    else:
+        flash(
+            f"Profile update rejected for {update_request.student.name}, but the email could not be sent.",
+            "warning",
+        )
     return redirect(url_for("admin.dashboard"))
 
 
@@ -618,8 +649,7 @@ def direct_issue_book(student_id):
     db.session.add(direct_txn)
     db.session.commit()
 
-    flash(f"Book issued directly to {selected_student.name}. Barcode: {direct_txn.barcode}", "success")
-    send_email(
+    email_sent = send_email(
         selected_student.email,
         "Book Issued From ShelfMate",
         (
@@ -627,6 +657,13 @@ def direct_issue_book(student_id):
             f"\nDue date: {due_date}\nBarcode: {direct_txn.barcode}\n\nShelfMate Library"
         ),
     )
+    if email_sent:
+        flash(f"Book issued directly to {selected_student.name}. Barcode: {direct_txn.barcode}. Email sent.", "success")
+    else:
+        flash(
+            f"Book issued directly to {selected_student.name}. Barcode: {direct_txn.barcode}. Email failed.",
+            "warning",
+        )
     return redirect(url_for("admin.student_lookup", **redirect_args))
 
 
@@ -672,15 +709,18 @@ def approve_request(txn_id):
         flash("The request could not be approved. Please try again.", "danger")
         return redirect(url_for("admin.dashboard"))
 
-    flash(f"Book issued successfully! Barcode: {txn.barcode}", "success")
-    send_email(
+    email_sent = send_email(
         student.email,
         "Book Request Approved",
         (
             f"Hello {student.name},\n\nYour request for '{book.title}' has been "
-            "approved. Please collect your book.\n\nShelfMate Library"
+            f"approved. Please collect your book.\nDue date: {txn.due_date}\nBarcode: {txn.barcode}\n\nShelfMate Library"
         ),
     )
+    if email_sent:
+        flash(f"Book issued successfully! Barcode: {txn.barcode}. Approval email sent.", "success")
+    else:
+        flash(f"Book issued successfully! Barcode: {txn.barcode}. Approval email failed.", "warning")
 
     return redirect(url_for("admin.dashboard"))
 
@@ -698,8 +738,7 @@ def reject_request(txn_id):
     txn.status = "rejected"
     txn.admin_note = reason
     db.session.commit()
-    flash("Book request rejected.", "warning")
-    send_email(
+    email_sent = send_email(
         txn.student.email,
         "Book Request Update",
         (
@@ -707,6 +746,10 @@ def reject_request(txn_id):
             f"Reason: {reason}\n\nShelfMate Library"
         ),
     )
+    if email_sent:
+        flash("Book request rejected. Rejection email sent.", "warning")
+    else:
+        flash("Book request rejected, but the rejection email could not be sent.", "warning")
     return redirect(url_for("admin.dashboard"))
 
 
@@ -721,8 +764,7 @@ def confirm_return(txn_id):
         if txn.book.issued_copies > 0:
             txn.book.issued_copies -= 1
         db.session.commit()
-        flash("Book return confirmed.", "success")
-        send_email(
+        email_sent = send_email(
             txn.student.email,
             "Book Return Confirmed",
             (
@@ -730,6 +772,10 @@ def confirm_return(txn_id):
                 "been confirmed. Thank you!\n\nShelfMate Library"
             ),
         )
+        if email_sent:
+            flash("Book return confirmed. Email sent.", "success")
+        else:
+            flash("Book return confirmed, but the email could not be sent.", "warning")
 
     source = request.form.get("source", "").strip()
     if source == "lookup":
@@ -759,9 +805,11 @@ def send_overdue_reminder(txn_id):
         flash(f"Reminder already sent to {txn.student.name} today.", "info")
         return redirect(url_for("admin.dashboard"))
 
-    send_overdue_reminder_for_transaction(txn)
-    db.session.commit()
-    flash(f"Reminder email sent to {txn.student.name}.", "success")
+    if send_overdue_reminder_for_transaction(txn):
+        db.session.commit()
+        flash(f"Reminder email sent to {txn.student.name}.", "success")
+    else:
+        flash(f"Reminder email could not be sent to {txn.student.name}.", "warning")
     return redirect(url_for("admin.dashboard"))
 
 
@@ -769,8 +817,16 @@ def send_overdue_reminder(txn_id):
 @login_required
 @admin_required
 def send_all_overdue_reminders():
-    sent_count = send_overdue_reminders(get_overdue_transactions())
-    flash(f"Reminder emails sent for {sent_count} overdue book(s).", "success")
+    overdue_transactions = get_overdue_transactions()
+    sent_count = send_overdue_reminders(overdue_transactions)
+    failed_count = len(overdue_transactions) - sent_count
+    if failed_count:
+        flash(
+            f"Reminder emails sent for {sent_count} overdue book(s); {failed_count} failed.",
+            "warning",
+        )
+    else:
+        flash(f"Reminder emails sent for {sent_count} overdue book(s).", "success")
     return redirect(url_for("admin.dashboard"))
 
 
