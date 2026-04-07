@@ -1,13 +1,27 @@
 from pathlib import Path
 
 from flask import Flask
+from sqlalchemy import inspect
 
 from app.error_handlers import register_error_handlers
 from app.extensions import csrf, db, login_manager, migrate
 from app.logging_config import configure_logging
-from app.models import Student
-from app.routes import admin_bp, auth_bp, main_bp, student_bp
+from app.models import Student, UploadedImage
+from app.routes import admin_bp, auth_bp, main_bp, media_url, student_bp
 from config import get_config
+
+
+def ensure_uploaded_image_table(app):
+    if app.config.get("IMAGE_STORAGE_BACKEND", "database").lower() != "database":
+        return
+
+    with app.app_context():
+        inspector = inspect(db.engine)
+        if "uploaded_images" in inspector.get_table_names():
+            return
+
+        UploadedImage.__table__.create(bind=db.engine, checkfirst=True)
+        app.logger.info("Created missing uploaded_images table for database-backed image storage.")
 
 
 def create_app(config_class=None):
@@ -26,6 +40,8 @@ def create_app(config_class=None):
     login_manager.init_app(app)
     migrate.init_app(app, db)
     configure_logging(app)
+    ensure_uploaded_image_table(app)
+    app.jinja_env.globals["media_url"] = media_url
 
     @login_manager.user_loader
     def load_user(student_id):

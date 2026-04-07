@@ -22,7 +22,7 @@
             <h1 class="mt-3 font-display text-3xl font-bold text-ink">Transaction {{ txn.txn_id }}</h1>
             <div class="mt-6 grid gap-4 lg:grid-cols-[0.88fr_1.12fr]">
                 <div class="rounded-3xl border border-slate-200 bg-white/80 p-4">
-                    <img src="{{ url_for('static', filename=book.image_path) }}" alt="{{ book.title }}" class="h-56 w-full rounded-3xl object-cover">
+                <img src="{{ media_url(book.cover_image, 'images/default-book.svg') }}" alt="{{ book.title }}" class="h-56 w-full rounded-3xl object-cover">
                 </div>
                 <div class="space-y-3 text-sm text-slate-700">
                 <div><span class="font-semibold">Student:</span> {{ student.name }} ({{ student.usn }})</div>
@@ -48,7 +48,7 @@
             <div class="mt-6 grid gap-4 sm:grid-cols-2">
                 <div class="rounded-2xl border border-white/10 bg-white/10 p-4">
                     <div class="mb-4 flex items-center gap-3">
-                        <img src="{{ url_for('static', filename=student.image_path) }}" alt="{{ student.name }}" class="h-16 w-16 rounded-full border border-white/10 object-cover">
+                    <img src="{{ media_url(student.profile_image, 'images/default-student.svg') }}" alt="{{ student.name }}" class="h-16 w-16 rounded-full border border-white/10 object-cover">
                         <div>
                             <p class="text-lg font-semibold">{{ student.name }}</p>
                             <p class="text-sm text-slate-300">{{ student.usn }}</p>

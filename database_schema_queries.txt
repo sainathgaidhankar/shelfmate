@@ -1,0 +1,70 @@
+CREATE DATABASE IF NOT EXISTS shelfmate_db;
+USE shelfmate_db;
+
+CREATE TABLE IF NOT EXISTS students (
+    student_id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(100) NULL,
+    usn VARCHAR(50) NULL,
+    department VARCHAR(50) NULL,
+    section VARCHAR(10) NULL,
+    semester VARCHAR(20) NULL,
+    academic_status VARCHAR(20) NULL DEFAULT 'active',
+    completion_year INT NULL,
+    profile_image VARCHAR(255) NULL,
+    contact VARCHAR(20) NULL,
+    email VARCHAR(100) NULL UNIQUE,
+    password VARCHAR(200) NULL,
+    approved BOOLEAN NULL DEFAULT FALSE,
+    is_admin BOOLEAN NULL DEFAULT FALSE
+);
+
+CREATE TABLE IF NOT EXISTS books (
+    book_id INT AUTO_INCREMENT PRIMARY KEY,
+    title VARCHAR(100) NULL,
+    author VARCHAR(100) NULL,
+    department VARCHAR(50) NULL,
+    subject VARCHAR(50) NULL,
+    cover_image VARCHAR(255) NULL,
+    total_copies INT NULL,
+    issued_copies INT NULL DEFAULT 0
+);
+
+CREATE TABLE IF NOT EXISTS transactions (
+    txn_id INT AUTO_INCREMENT PRIMARY KEY,
+    student_id INT NOT NULL,
+    book_id INT NOT NULL,
+    status VARCHAR(50) NOT NULL DEFAULT 'requested',
+    issue_date DATE NULL,
+    due_date DATE NULL,
+    return_date DATE NULL,
+    barcode VARCHAR(100) NULL UNIQUE,
+    admin_note VARCHAR(255) NULL,
+    reminder_sent_at DATE NULL,
+    CONSTRAINT fk_transactions_student
+        FOREIGN KEY (student_id) REFERENCES students(student_id),
+    CONSTRAINT fk_transactions_book
+        FOREIGN KEY (book_id) REFERENCES books(book_id)
+);
+
+CREATE TABLE IF NOT EXISTS student_update_requests (
+    request_id INT AUTO_INCREMENT PRIMARY KEY,
+    student_id INT NOT NULL,
+    requested_contact VARCHAR(20) NULL,
+    requested_section VARCHAR(10) NULL,
+    requested_profile_image VARCHAR(255) NULL,
+    status VARCHAR(20) NOT NULL DEFAULT 'pending',
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    reviewed_at DATETIME NULL,
+    admin_note VARCHAR(255) NULL,
+    CONSTRAINT fk_student_update_requests_student
+        FOREIGN KEY (student_id) REFERENCES students(student_id)
+        ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS uploaded_images (
+    image_id VARCHAR(32) PRIMARY KEY,
+    filename VARCHAR(255) NOT NULL,
+    content_type VARCHAR(100) NOT NULL,
+    data LONGBLOB NOT NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);

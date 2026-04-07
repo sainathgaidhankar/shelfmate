@@ -16,7 +16,7 @@
 <div class="space-y-6">
     <section class="dark-glass rounded-[32px] border border-white/10 px-6 py-8 text-white shadow-glow sm:px-8">
         <div class="flex flex-col gap-6 lg:flex-row lg:items-center">
-            <img src="{{ url_for('static', filename=student.image_path) }}" alt="{{ student.name }}" class="h-28 w-28 rounded-3xl border border-white/10 object-cover shadow-lg">
+                <img src="{{ media_url(student.profile_image, 'images/default-student.svg') }}" alt="{{ student.name }}" class="h-28 w-28 rounded-3xl border border-white/10 object-cover shadow-lg">
             <div>
                 <p class="font-mono text-xs uppercase tracking-[0.3em] text-sand">Student Ledger</p>
                 <h1 class="mt-4 font-display text-4xl font-bold">{{ student.name }}</h1>
@@ -60,7 +60,7 @@
                         <td class="px-4 py-4 font-mono text-xs">{{ txn.txn_id }}</td>
                         <td class="px-4 py-4">
                             <div class="flex items-center gap-3">
-                                <img src="{{ url_for('static', filename=txn.book.image_path) }}" alt="{{ txn.book.title }}" class="h-14 w-12 rounded-2xl border border-slate-200 object-cover">
+                                <img src="{{ media_url(txn.book.cover_image, 'images/default-book.svg') }}" alt="{{ txn.book.title }}" class="h-14 w-12 rounded-2xl border border-slate-200 object-cover">
                                 <div class="font-medium">{{ txn.book.title }}</div>
                             </div>
                         </td>

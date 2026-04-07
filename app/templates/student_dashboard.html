@@ -16,7 +16,7 @@
     <section class="grid gap-6 xl:grid-cols-[0.92fr_1.08fr]">
         <div class="dark-glass rounded-[32px] border border-white/10 px-6 py-8 text-white shadow-glow sm:px-8">
             <div class="flex flex-col gap-6 lg:flex-row lg:items-center">
-                <img src="{{ url_for('static', filename=student.image_path) }}" alt="{{ student.name }}" class="h-28 w-28 rounded-full border border-white/10 object-cover shadow-lg">
+                <img src="{{ media_url(student.profile_image, 'images/default-student.svg') }}" alt="{{ student.name }}" class="h-28 w-28 rounded-full border border-white/10 object-cover shadow-lg">
                 <div class="flex-1">
                     <p class="font-mono text-xs uppercase tracking-[0.3em] text-sand">Student Profile</p>
                     <h1 class="mt-4 font-display text-4xl font-bold">{{ student.name }}</h1>
@@ -111,7 +111,7 @@
         <article class="flex h-full flex-col rounded-[28px] border p-5 shadow-glow {% if book.available_copies > 0 %}glass-panel border-white/60{% else %}border-rose-200 bg-gradient-to-b from-rose-50 to-white{% endif %}">
             <div class="overflow-hidden rounded-[24px] border border-slate-200 bg-slate-100">
                 <div class="flex h-64 items-center justify-center bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.95),_rgba(241,245,249,0.88))] p-4 lg:h-72">
-                    <img src="{{ url_for('static', filename=book.image_path) }}" alt="{{ book.title }}" class="h-full w-auto max-w-full rounded-[18px] object-contain shadow-[0_18px_40px_rgba(15,23,42,0.14)]">
+                            <img src="{{ media_url(book.cover_image, 'images/default-book.svg') }}" alt="{{ book.title }}" class="h-full w-auto max-w-full rounded-[18px] object-contain shadow-[0_18px_40px_rgba(15,23,42,0.14)]">
                 </div>
             </div>
             <div class="mt-5 flex flex-1 flex-col">
@@ -187,7 +187,7 @@
                         <td class="px-4 py-4 font-mono text-xs">{{ txn.txn_id }}</td>
                         <td class="px-4 py-4">
                             <div class="flex items-center gap-3">
-                                <img src="{{ url_for('static', filename=txn.book.image_path) }}" alt="{{ txn.book.title }}" class="h-14 w-12 rounded-2xl border border-slate-200 object-cover">
+                                <img src="{{ media_url(txn.book.cover_image, 'images/default-book.svg') }}" alt="{{ txn.book.title }}" class="h-14 w-12 rounded-2xl border border-slate-200 object-cover">
                                 <div class="font-medium">{{ txn.book.title }}</div>
                             </div>
                         </td>

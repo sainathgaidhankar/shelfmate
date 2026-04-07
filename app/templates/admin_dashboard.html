@@ -36,7 +36,7 @@
                         <tr class="align-top">
                             <td class="px-4 py-4">
                                 <div class="flex items-center gap-3">
-                                    <img src="{{ url_for('static', filename=update.student.image_path) }}" alt="{{ update.student.name }}" class="h-12 w-12 rounded-full border border-slate-200 object-cover">
+            <img src="{{ media_url(update.student.profile_image, 'images/default-student.svg') }}" alt="{{ update.student.name }}" class="h-12 w-12 rounded-full border border-slate-200 object-cover">
                                     <div>
                                         <div class="font-medium">{{ update.student.name }}</div>
                                         <div class="mt-1 font-mono text-xs text-slate-500">{{ update.student.usn }}</div>
@@ -53,7 +53,7 @@
                             </td>
                             <td class="px-4 py-4">
                                 {% if update.requested_profile_image %}
-                                <img src="{{ url_for('static', filename=update.requested_profile_image) }}" alt="Requested profile" class="h-12 w-12 rounded-full border border-slate-200 object-cover">
+                    <img src="{{ media_url(update.requested_profile_image, 'images/default-student.svg') }}" alt="Requested profile" class="h-12 w-12 rounded-full border border-slate-200 object-cover">
                                 {% else %}
                                 <span class="text-xs text-slate-400">No new image</span>
                                 {% endif %}

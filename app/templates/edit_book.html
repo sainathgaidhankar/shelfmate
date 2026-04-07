@@ -16,7 +16,7 @@
 <div class="mx-auto max-w-4xl">
     <div class="glass-panel rounded-[32px] border border-white/60 p-6 shadow-glow sm:p-8">
         <div class="mb-8 flex flex-col gap-6 lg:flex-row lg:items-center">
-            <img src="{{ url_for('static', filename=book.image_path) }}" alt="{{ book.title }}" class="h-36 w-28 rounded-[24px] border border-slate-200 object-cover shadow-lg">
+                <img src="{{ media_url(book.cover_image, 'images/default-book.svg') }}" alt="{{ book.title }}" class="h-36 w-28 rounded-[24px] border border-slate-200 object-cover shadow-lg">
             <div>
                 <p class="font-mono text-xs uppercase tracking-[0.3em] text-teal-700">Catalog</p>
                 <h1 class="mt-3 font-display text-3xl font-bold text-ink sm:text-4xl">Edit book</h1>

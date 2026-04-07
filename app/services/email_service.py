@@ -1,6 +1,7 @@
 import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
+import ssl
 
 from flask import current_app
 
@@ -10,15 +11,23 @@ def send_email(to_email, subject, body):
         current_app.logger.warning("Email skipped because mailer is disabled: %s", subject)
         return False
 
+    smtp_host = current_app.config.get("SMTP_SERVER")
+    smtp_port = current_app.config.get("SMTP_PORT")
+    smtp_email = current_app.config.get("SMTP_EMAIL")
+    smtp_password = current_app.config.get("SMTP_PASSWORD")
+    default_sender = current_app.config.get("MAIL_DEFAULT_SENDER") or smtp_email
+
+    if not all([smtp_host, smtp_port, smtp_email, smtp_password, default_sender]):
+        current_app.logger.error("Email skipped because SMTP configuration is incomplete for subject %s", subject)
+        return False
+
     try:
         message = MIMEMultipart()
-        message["From"] = current_app.config["SMTP_EMAIL"]
+        message["From"] = default_sender
         message["To"] = to_email
         message["Subject"] = subject
         message.attach(MIMEText(body, "plain"))
 
-        smtp_host = current_app.config["SMTP_SERVER"]
-        smtp_port = current_app.config["SMTP_PORT"]
         smtp_timeout = current_app.config.get("SMTP_TIMEOUT", 10)
 
         if current_app.config.get("MAIL_USE_SSL"):
@@ -26,6 +35,7 @@ def send_email(to_email, subject, body):
                 smtp_host,
                 smtp_port,
                 timeout=smtp_timeout,
+                context=ssl.create_default_context(),
             )
         else:
             server = smtplib.SMTP(
@@ -35,13 +45,12 @@ def send_email(to_email, subject, body):
             )
 
         if current_app.config.get("MAIL_USE_TLS") and not current_app.config.get("MAIL_USE_SSL"):
-            server.starttls()
-        server.login(
-            current_app.config["SMTP_EMAIL"],
-            current_app.config["SMTP_PASSWORD"],
-        )
+            server.ehlo()
+            server.starttls(context=ssl.create_default_context())
+            server.ehlo()
+        server.login(smtp_email, smtp_password)
         server.sendmail(
-            current_app.config["SMTP_EMAIL"],
+            default_sender,
             to_email,
             message.as_string(),
         )

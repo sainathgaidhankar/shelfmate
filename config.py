@@ -10,27 +10,66 @@ load_dotenv()
 BASE_DIR = Path(__file__).resolve().parent
 
 
+def _env_flag(name: str, default: bool = False) -> bool:
+    value = os.getenv(name)
+    if value is None:
+        return default
+    return value.strip().lower() in {"1", "true", "yes", "on"}
+
+
+def _env_value(name: str) -> str | None:
+    value = os.getenv(name)
+    if value is None:
+        return None
+    cleaned = value.strip()
+    return cleaned or None
+
+
+def _smtp_password() -> str | None:
+    host = (_env_value("SMTP_SERVER") or "").lower()
+    password = _env_value("SMTP_PASSWORD")
+    if not password:
+        return None
+    if "gmail" in host:
+        return "".join(password.split())
+    return password
+
+
+def _mailer_enabled() -> bool:
+    value = os.getenv("ENABLE_MAILER")
+    if value is not None:
+        return _env_flag("ENABLE_MAILER")
+    return all(
+        [
+            _env_value("SMTP_SERVER"),
+            _env_value("SMTP_EMAIL"),
+            _smtp_password(),
+        ]
+    )
+
+
 class Config:
-    SECRET_KEY = os.getenv("SECRET_KEY")
-    SQLALCHEMY_DATABASE_URI = os.getenv("DATABASE_URI")
+    SECRET_KEY = _env_value("SECRET_KEY")
+    SQLALCHEMY_DATABASE_URI = _env_value("DATABASE_URI")
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
     LOG_DIR = os.getenv("LOG_DIR", str(BASE_DIR / "logs"))
 
-    SMTP_SERVER = os.getenv("SMTP_SERVER")
+    SMTP_SERVER = _env_value("SMTP_SERVER")
     SMTP_PORT = int(os.getenv("SMTP_PORT", "587"))
-    SMTP_EMAIL = os.getenv("SMTP_EMAIL")
-    SMTP_PASSWORD = os.getenv("SMTP_PASSWORD")
-    MAIL_USE_TLS = os.getenv("MAIL_USE_TLS") == "True"
-    MAIL_USE_SSL = os.getenv("MAIL_USE_SSL") == "True"
+    SMTP_EMAIL = _env_value("SMTP_EMAIL")
+    SMTP_PASSWORD = _smtp_password()
+    MAIL_USE_TLS = _env_flag("MAIL_USE_TLS")
+    MAIL_USE_SSL = _env_flag("MAIL_USE_SSL")
     MAIL_DEBUG = int(os.getenv("MAIL_DEBUG", "0"))
-    MAIL_DEFAULT_SENDER = os.getenv("MAIL_DEFAULT_SENDER")
-    ENABLE_MAILER = os.getenv("ENABLE_MAILER") == "True"
+    MAIL_DEFAULT_SENDER = _env_value("MAIL_DEFAULT_SENDER")
+    ENABLE_MAILER = _mailer_enabled()
     SMTP_TIMEOUT = int(os.getenv("SMTP_TIMEOUT", "10"))
     MAX_CONTENT_LENGTH = int(os.getenv("MAX_CONTENT_LENGTH", str(4 * 1024 * 1024)))
     ALLOWED_IMAGE_EXTENSIONS = {"png", "jpg", "jpeg", "gif", "webp", "svg"}
     STUDENT_UPLOAD_FOLDER = "uploads/students"
     BOOK_UPLOAD_FOLDER = "uploads/books"
+    IMAGE_STORAGE_BACKEND = (_env_value("IMAGE_STORAGE_BACKEND") or "database").lower()
 
     @classmethod
     def validate(cls):

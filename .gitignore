@@ -8,3 +8,7 @@ migrations/__pycache__/
 venv/
 *.log
 *.pyc
+certificate*
+report*
+*.ppt
+*.pptx

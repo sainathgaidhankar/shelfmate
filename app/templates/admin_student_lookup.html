@@ -63,7 +63,7 @@
                     <tr>
                         <td class="px-4 py-4">
                             <div class="flex items-center gap-3">
-                                <img src="{{ url_for('static', filename=item.student.image_path) }}" alt="{{ item.student.name }}" class="h-14 w-14 rounded-full border border-slate-200 object-cover">
+                        <img src="{{ media_url(item.student.profile_image, 'images/default-student.svg') }}" alt="{{ item.student.name }}" class="h-14 w-14 rounded-full border border-slate-200 object-cover">
                                 <div>
                                     <div class="font-medium">{{ item.student.name }}</div>
                                     <div class="mt-1 font-mono text-xs text-slate-500">{{ item.student.usn }}</div>
@@ -91,7 +91,7 @@
     <div class="grid gap-6 xl:grid-cols-[0.92fr_1.08fr]">
         <div class="dark-glass rounded-[32px] border border-white/10 px-6 py-8 text-white shadow-glow sm:px-8">
             <div class="flex flex-col gap-6 lg:flex-row lg:items-center">
-                <img src="{{ url_for('static', filename=selected_student.image_path) }}" alt="{{ selected_student.name }}" class="h-28 w-28 rounded-full border border-white/10 object-cover shadow-lg">
+                <img src="{{ media_url(selected_student.profile_image, 'images/default-student.svg') }}" alt="{{ selected_student.name }}" class="h-28 w-28 rounded-full border border-white/10 object-cover shadow-lg">
                 <div>
                     <h2 class="font-display text-3xl font-bold">{{ selected_student.name }}</h2>
                     <p class="mt-2 font-mono text-xs uppercase tracking-[0.25em] text-slate-300">{{ selected_student.usn }}</p>
@@ -157,7 +157,7 @@
                     <tr class="align-top">
                         <td class="px-4 py-4">
                             <div class="flex items-center gap-3">
-                                <img src="{{ url_for('static', filename=txn.book.image_path) }}" alt="{{ txn.book.title }}" class="h-14 w-12 rounded-2xl border border-slate-200 object-cover">
+                                        <img src="{{ media_url(txn.book.cover_image, 'images/default-book.svg') }}" alt="{{ txn.book.title }}" class="h-14 w-12 rounded-2xl border border-slate-200 object-cover">
                                 <div>
                                     <div class="font-medium">{{ txn.book.title }}</div>
                                     <div class="mt-1 text-xs text-slate-500">{{ txn.book.author }}</div>
@@ -215,7 +215,7 @@
                         <td class="px-4 py-4 font-mono text-xs">{{ txn.txn_id }}</td>
                         <td class="px-4 py-4">
                             <div class="flex items-center gap-3">
-                                <img src="{{ url_for('static', filename=txn.book.image_path) }}" alt="{{ txn.book.title }}" class="h-14 w-12 rounded-2xl border border-slate-200 object-cover">
+                                        <img src="{{ media_url(txn.book.cover_image, 'images/default-book.svg') }}" alt="{{ txn.book.title }}" class="h-14 w-12 rounded-2xl border border-slate-200 object-cover">
                                 <div>
                                     <div class="font-medium">{{ txn.book.title }}</div>
                                     <div class="mt-1 text-xs text-slate-500">{{ txn.book.author }}</div>
