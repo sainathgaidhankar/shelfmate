@@ -2,7 +2,7 @@ from datetime import date
 
 from app.extensions import db
 from app.models import Transaction
-from app.services.email_service import send_email
+from app.services.email_service import send_email_with_status
 
 
 def get_overdue_transactions(include_already_reminded=False):
@@ -19,7 +19,7 @@ def get_overdue_transactions(include_already_reminded=False):
 
 
 def send_overdue_reminder_for_transaction(txn):
-    sent = send_email(
+    sent, error_message = send_email_with_status(
         txn.student.email,
         "ShelfMate Overdue Book Reminder",
         (
@@ -30,14 +30,18 @@ def send_overdue_reminder_for_transaction(txn):
     )
     if sent:
         txn.reminder_sent_at = date.today()
-    return sent
+    return sent, error_message
 
 
 def send_overdue_reminders(transactions):
     sent_count = 0
+    failed_details = []
     for txn in transactions:
-        if send_overdue_reminder_for_transaction(txn):
+        sent, error_message = send_overdue_reminder_for_transaction(txn)
+        if sent:
             sent_count += 1
+        else:
+            failed_details.append((txn, error_message))
     if sent_count:
         db.session.commit()
-    return sent_count
+    return sent_count, failed_details
