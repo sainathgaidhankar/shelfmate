@@ -1,6 +1,8 @@
 from datetime import datetime
 from uuid import uuid4
 
+from sqlalchemy.dialects.mysql import LONGBLOB
+
 from app.extensions import db
 
 
@@ -10,5 +12,5 @@ class UploadedImage(db.Model):
     image_id = db.Column(db.String(32), primary_key=True, default=lambda: uuid4().hex)
     filename = db.Column(db.String(255), nullable=False)
     content_type = db.Column(db.String(100), nullable=False)
-    data = db.Column(db.LargeBinary, nullable=False)
+    data = db.Column(LONGBLOB, nullable=False)
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)

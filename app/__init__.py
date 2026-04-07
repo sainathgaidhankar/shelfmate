@@ -1,7 +1,7 @@
 from pathlib import Path
 
 from flask import Flask
-from sqlalchemy import inspect
+from sqlalchemy import inspect, text
 
 from app.error_handlers import register_error_handlers
 from app.extensions import csrf, db, login_manager, migrate
@@ -18,9 +18,18 @@ def ensure_uploaded_image_table(app):
     with app.app_context():
         inspector = inspect(db.engine)
         if "uploaded_images" in inspector.get_table_names():
+            columns = {column["name"]: column for column in inspector.get_columns("uploaded_images")}
+            data_column = columns.get("data")
+            data_type = str(data_column.get("type", "")).lower() if data_column else ""
+            if "longblob" not in data_type:
+                db.session.execute(text("ALTER TABLE uploaded_images MODIFY COLUMN data LONGBLOB NOT NULL"))
+                db.session.commit()
+                app.logger.info("Upgraded uploaded_images.data column to LONGBLOB.")
             return
 
         UploadedImage.__table__.create(bind=db.engine, checkfirst=True)
+        db.session.execute(text("ALTER TABLE uploaded_images MODIFY COLUMN data LONGBLOB NOT NULL"))
+        db.session.commit()
         app.logger.info("Created missing uploaded_images table for database-backed image storage.")
 
 
