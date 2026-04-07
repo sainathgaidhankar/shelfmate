@@ -1,4 +1,4 @@
-from flask import Blueprint, flash, redirect, render_template, request, url_for
+from flask import Blueprint, current_app, flash, redirect, render_template, request, url_for
 from flask_login import login_required, login_user, logout_user
 from sqlalchemy.exc import IntegrityError
 from werkzeug.security import check_password_hash, generate_password_hash
@@ -28,6 +28,9 @@ def register():
         except ValueError as exc:
             flash(str(exc), "danger")
             return redirect(url_for("auth.register"))
+        except RuntimeError as exc:
+            flash(str(exc), "danger")
+            return redirect(url_for("auth.register"))
 
         new_student = Student(
             name=request.form["name"],
@@ -51,6 +54,11 @@ def register():
             db.session.rollback()
             flash("Email already registered. Please login instead.", "danger")
             return redirect(url_for("auth.login"))
+        except Exception:
+            db.session.rollback()
+            current_app.logger.exception("Student registration failed for email %s", request.form["email"])
+            flash("Registration failed due to a server error. Please try again.", "danger")
+            return redirect(url_for("auth.register"))
         flash("Registration request submitted. Await admin approval.", "info")
         return redirect(url_for("auth.login"))
 

@@ -3,7 +3,7 @@ from datetime import date
 from datetime import datetime
 from io import StringIO
 
-from flask import Blueprint, Response, abort, flash, redirect, render_template, request, url_for
+from flask import Blueprint, Response, abort, current_app, flash, redirect, render_template, request, url_for
 from flask_login import login_required
 from sqlalchemy import or_, select
 from sqlalchemy.exc import IntegrityError
@@ -197,6 +197,9 @@ def add_book():
         except ValueError as exc:
             flash(str(exc), "danger")
             return redirect(url_for("admin.add_book"))
+        except RuntimeError as exc:
+            flash(str(exc), "danger")
+            return redirect(url_for("admin.add_book"))
 
         new_book = Book(
             book_id=request.form["book_id"],
@@ -214,6 +217,11 @@ def add_book():
         except IntegrityError:
             db.session.rollback()
             flash("Book ID already exists. Please use a unique book ID.", "danger")
+            return redirect(url_for("admin.add_book"))
+        except Exception:
+            db.session.rollback()
+            current_app.logger.exception("Book creation failed for book_id %s", request.form["book_id"])
+            flash("Book could not be added due to a server error. Please try again.", "danger")
             return redirect(url_for("admin.add_book"))
         flash("Book added successfully.", "success")
         return redirect(url_for("admin.view_books"))
@@ -251,6 +259,9 @@ def edit_book(book_id):
         except ValueError as exc:
             flash(str(exc), "danger")
             return redirect(url_for("admin.edit_book", book_id=book.book_id))
+        except RuntimeError as exc:
+            flash(str(exc), "danger")
+            return redirect(url_for("admin.edit_book", book_id=book.book_id))
 
         book.title = request.form["title"]
         book.author = request.form["author"]
@@ -260,7 +271,13 @@ def edit_book(book_id):
         if cover_image:
             book.cover_image = cover_image
 
-        db.session.commit()
+        try:
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+            current_app.logger.exception("Book update failed for book_id %s", book.book_id)
+            flash("Book details could not be updated due to a server error. Please try again.", "danger")
+            return redirect(url_for("admin.edit_book", book_id=book.book_id))
         flash("Book details updated successfully.", "success")
         return redirect(url_for("admin.view_books"))
 

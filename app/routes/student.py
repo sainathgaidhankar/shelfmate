@@ -1,4 +1,4 @@
-from flask import Blueprint, flash, redirect, render_template, request, url_for
+from flask import Blueprint, current_app, flash, redirect, render_template, request, url_for
 from flask_login import current_user, login_required
 from sqlalchemy import or_, select
 
@@ -100,6 +100,9 @@ def request_profile_update():
     except ValueError as exc:
         flash(str(exc), "danger")
         return redirect(url_for("student.dashboard"))
+    except RuntimeError as exc:
+        flash(str(exc), "danger")
+        return redirect(url_for("student.dashboard"))
 
     update_request = StudentUpdateRequest(
         student_id=current_user.student_id,
@@ -109,7 +112,13 @@ def request_profile_update():
         status="pending",
     )
     db.session.add(update_request)
-    db.session.commit()
+    try:
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+        current_app.logger.exception("Profile update request failed for student %s", current_user.student_id)
+        flash("Profile update request failed due to a server error. Please try again.", "danger")
+        return redirect(url_for("student.dashboard"))
     flash("Profile update request submitted. Await admin approval.", "info")
     return redirect(url_for("student.dashboard"))
 
