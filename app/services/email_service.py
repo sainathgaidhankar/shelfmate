@@ -51,6 +51,7 @@ def _send_via_resend(to_email, subject, body):
         headers={
             "Authorization": f"Bearer {api_key}",
             "Content-Type": "application/json",
+            "User-Agent": "shelfmate/1.0",
         },
         method="POST",
     )
@@ -65,6 +66,13 @@ def _send_via_resend(to_email, subject, body):
     except HTTPError as exc:
         response_text = exc.read().decode("utf-8", errors="replace")
         current_app.logger.exception("Resend API HTTP error for subject %s: %s", subject, response_text)
+        try:
+            response_json = json.loads(response_text)
+            resend_message = response_json.get("message") or response_json.get("error")
+        except Exception:
+            resend_message = None
+        if resend_message:
+            return False, f"Resend API rejected the request: {resend_message}"
         return False, f"Resend API rejected the request: HTTP {exc.code}."
     except URLError as exc:
         current_app.logger.exception("Resend API network error for subject %s", subject)
