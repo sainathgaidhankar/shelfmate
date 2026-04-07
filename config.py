@@ -41,6 +41,10 @@ def _mailer_enabled() -> bool:
         return _env_flag("ENABLE_MAILER")
     return all(
         [
+            _env_value("RESEND_API_KEY"),
+        ]
+    ) or all(
+        [
             _env_value("SMTP_SERVER"),
             _env_value("SMTP_EMAIL"),
             _smtp_password(),
@@ -63,6 +67,9 @@ class Config:
     MAIL_USE_SSL = _env_flag("MAIL_USE_SSL")
     MAIL_DEBUG = int(os.getenv("MAIL_DEBUG", "0"))
     MAIL_DEFAULT_SENDER = _env_value("MAIL_DEFAULT_SENDER")
+    MAIL_TRANSPORT = (_env_value("MAIL_TRANSPORT") or "auto").lower()
+    RESEND_API_KEY = _env_value("RESEND_API_KEY")
+    RESEND_API_URL = _env_value("RESEND_API_URL") or "https://api.resend.com/emails"
     ENABLE_MAILER = _mailer_enabled()
     SMTP_TIMEOUT = int(os.getenv("SMTP_TIMEOUT", "10"))
     MAX_CONTENT_LENGTH = int(os.getenv("MAX_CONTENT_LENGTH", str(4 * 1024 * 1024)))

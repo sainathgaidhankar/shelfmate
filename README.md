@@ -96,6 +96,10 @@ Required values:
 DATABASE_URI=mysql+pymysql://root:password@localhost/shelfmate_db
 SECRET_KEY=replace_with_a_secure_secret
 FLASK_ENV=development
+MAIL_TRANSPORT=auto
+MAIL_DEFAULT_SENDER=onboarding@resend.dev
+RESEND_API_KEY=your_resend_api_key
+RESEND_API_URL=https://api.resend.com/emails
 SMTP_SERVER=smtp.gmail.com
 SMTP_PORT=587
 SMTP_EMAIL=your_email@gmail.com
@@ -103,11 +107,12 @@ SMTP_PASSWORD=your_app_password
 MAIL_USE_TLS=True
 MAIL_USE_SSL=False
 MAIL_DEBUG=0
-MAIL_DEFAULT_SENDER=your_email@gmail.com
 ENABLE_MAILER=True
 SMTP_TIMEOUT=10
 LOG_LEVEL=INFO
 ```
+
+For hosted deployments, prefer `Resend` over raw SMTP. If `RESEND_API_KEY` is set and `MAIL_TRANSPORT=auto`, ShelfMate will use the Resend API automatically and avoid blocked SMTP ports.
 
 ## Database Setup
 
@@ -185,6 +190,7 @@ Create an admin user directly in the database or through your existing admin see
 - Use `wsgi.py` as the production entrypoint
 - Set environment variables in your hosting platform
 - For production deployment, use a managed MySQL database and a proper WSGI server such as Gunicorn
+- If your host blocks outbound SMTP, set `RESEND_API_KEY` and `MAIL_DEFAULT_SENDER` and let the app send mail through the Resend API instead of Gmail SMTP
 
 ## Final QA Checklist
 
