@@ -1,9 +1,9 @@
 import smtplib
 import json
-from email.utils import formataddr
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 import ssl
+import socket
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
@@ -20,11 +20,7 @@ def _mail_transport():
 
 
 def _sender_value():
-    sender = current_app.config.get("MAIL_DEFAULT_SENDER") or current_app.config.get("SMTP_EMAIL")
-    sender_name = current_app.config.get("MAIL_SENDER_NAME") or "ShelfMate Library"
-    if sender and "<" not in sender:
-        return formataddr((sender_name, sender))
-    return sender
+    return current_app.config.get("MAIL_DEFAULT_SENDER") or current_app.config.get("SMTP_EMAIL")
 
 
 def _send_via_resend(to_email, subject, body):
@@ -105,60 +101,100 @@ def _send_via_smtp(to_email, subject, body):
         current_app.logger.error("Email skipped because SMTP configuration is incomplete for subject %s: %s", subject, message)
         return False, message
 
-    server = None
+    smtp_timeout = current_app.config.get("SMTP_TIMEOUT", 10)
+    connection_attempts = [
+        {
+            "port": smtp_port,
+            "use_tls": current_app.config.get("MAIL_USE_TLS"),
+            "use_ssl": current_app.config.get("MAIL_USE_SSL"),
+        }
+    ]
+    if smtp_host and "gmail" in smtp_host.lower():
+        configured = connection_attempts[0]
+        gmail_fallbacks = [
+            {"port": 587, "use_tls": True, "use_ssl": False},
+            {"port": 465, "use_tls": False, "use_ssl": True},
+        ]
+        for fallback in gmail_fallbacks:
+            if fallback != configured:
+                connection_attempts.append(fallback)
+
+    last_error = None
+    for attempt in connection_attempts:
+        server = None
+        try:
+            message = MIMEMultipart()
+            message["From"] = default_sender
+            message["To"] = to_email
+            message["Subject"] = subject
+            message.attach(MIMEText(body, "plain"))
+
+            if attempt["use_ssl"]:
+                server = smtplib.SMTP_SSL(
+                    smtp_host,
+                    attempt["port"],
+                    timeout=smtp_timeout,
+                    context=ssl.create_default_context(),
+                )
+            else:
+                server = smtplib.SMTP(
+                    smtp_host,
+                    attempt["port"],
+                    timeout=smtp_timeout,
+                )
+
+            if attempt["use_tls"] and not attempt["use_ssl"]:
+                server.ehlo()
+                server.starttls(context=ssl.create_default_context())
+                server.ehlo()
+            server.login(smtp_email, smtp_password)
+            server.sendmail(
+                smtp_email,
+                [to_email],
+                message.as_string(),
+            )
+            server.quit()
+            return True, "Email sent."
+        except smtplib.SMTPAuthenticationError as exc:
+            current_app.logger.exception("SMTP authentication failed for subject %s", subject)
+            return False, f"SMTP authentication failed: {exc}"
+        except smtplib.SMTPRecipientsRefused as exc:
+            current_app.logger.exception("Recipient refused for subject %s", subject)
+            return False, f"Recipient refused: {exc}"
+        except (OSError, socket.error) as exc:
+            last_error = exc
+            current_app.logger.warning(
+                "SMTP network error on %s:%s for subject %s: %s",
+                smtp_host,
+                attempt["port"],
+                subject,
+                exc,
+            )
+        except smtplib.SMTPException as exc:
+            current_app.logger.exception("SMTP error sending email to %s with subject %s", to_email, subject)
+            return False, f"SMTP error: {exc}"
+        except Exception as exc:
+            current_app.logger.exception("Error sending email to %s with subject %s", to_email, subject)
+            return False, f"Unexpected mail error: {exc}"
+        finally:
+            if server is not None:
+                try:
+                    server.quit()
+                except Exception:
+                    pass
+
+    if last_error is not None:
+        return False, f"SMTP network error: {last_error}"
+
     try:
         message = MIMEMultipart()
         message["From"] = default_sender
         message["To"] = to_email
         message["Subject"] = subject
         message.attach(MIMEText(body, "plain"))
-
-        smtp_timeout = current_app.config.get("SMTP_TIMEOUT", 10)
-
-        if current_app.config.get("MAIL_USE_SSL"):
-            server = smtplib.SMTP_SSL(
-                smtp_host,
-                smtp_port,
-                timeout=smtp_timeout,
-                context=ssl.create_default_context(),
-            )
-        else:
-            server = smtplib.SMTP(
-                smtp_host,
-                smtp_port,
-                timeout=smtp_timeout,
-            )
-
-        if current_app.config.get("MAIL_USE_TLS") and not current_app.config.get("MAIL_USE_SSL"):
-            server.ehlo()
-            server.starttls(context=ssl.create_default_context())
-            server.ehlo()
-        server.login(smtp_email, smtp_password)
-        server.sendmail(
-            default_sender,
-            to_email,
-            message.as_string(),
-        )
-        server.quit()
-        return True, "Email sent."
-    except smtplib.SMTPAuthenticationError as exc:
-        current_app.logger.exception("SMTP authentication failed for subject %s", subject)
-        return False, f"SMTP authentication failed: {exc}"
-    except smtplib.SMTPRecipientsRefused as exc:
-        current_app.logger.exception("Recipient refused for subject %s", subject)
-        return False, f"Recipient refused: {exc}"
-    except smtplib.SMTPException as exc:
-        current_app.logger.exception("SMTP error sending email to %s with subject %s", to_email, subject)
-        return False, f"SMTP error: {exc}"
-    except Exception as exc:
-        current_app.logger.exception("Error sending email to %s with subject %s", to_email, subject)
-        return False, f"Unexpected mail error: {exc}"
-    finally:
-        if server is not None:
-            try:
-                server.quit()
-            except Exception:
-                pass
+    except Exception:
+        pass
+    return False, "SMTP send failed."
 
 
 def send_email_with_status(to_email, subject, body):
